@@ -1,0 +1,10 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "routes": [
+    { "src": "/checker",        "dest": "/checker.html" },
+    { "src": "/generator",      "dest": "/generator.html" },
+    { "src": "/trim-collection","dest": "/trim-collection.html" },
+    { "src": "/interior",       "dest": "/interior.html" }
+  ]
+}
