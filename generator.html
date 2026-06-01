@@ -12,7 +12,7 @@
     --surface2: #1f1f1f;
     --border: #2a2a2a;
     --border2: #3a3a3a;
-    --accent: #c8ff00;
+    --accent: #38bdf8;
     --accent2: #00c8ff;
     --text: #e8e8e0;
     --muted: #666;
@@ -148,7 +148,7 @@
     border-color: var(--accent);
     font-weight: 600;
   }
-  .btn-accent:hover { background: #b0e600; color: #000; border-color: #b0e600; }
+  .btn-accent:hover { background: #0ea5e9; color: #000; border-color: #0ea5e9; }
   .btn-danger { border-color: var(--danger); color: var(--danger); padding: 4px 8px; font-size: 11px; }
   .btn-danger:hover { background: var(--danger); color: #fff; }
   .btn-sm { padding: 5px 10px; font-size: 11px; }
@@ -251,7 +251,7 @@
   <a href="index.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;display:flex;align-items:center;gap:6px">← Campaign Converter</a>
   <div style="flex:1"></div>
   <a href="checker.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Checker</a>
-  <a href="generator.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Generator</a>
+  <a href="generator.html" style="font-family:var(--mono);font-size:11px;color:var(--accent);text-decoration:none;padding:4px 10px;border-radius:3px">Generator</a>
   <a href="trim-collection.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Trim Collection</a>
   <a href="exteriors.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Exteriors</a>
   <a href="interior.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Interior</a>
@@ -549,32 +549,40 @@ function generate() {
 
   const msgIdStart = parseInt(getVal('messageId')) || 1;
   const delivLabel = getVal('deliveryLabel');
+  const brandAbbr = { CHEVROLET: 'CH', GMC: 'GM', BUICK: 'BU', CADILLAC: 'CA' };
+  const abbr = brandAbbr[base.marketingMake] || base.marketingMake;
 
-  const records = eventCodes.map((ec, idx) => {
-    const combo = rand(validCombos);
-    const intColor = rand(interiorColors);
-    const brandAbbr = { CHEVROLET: 'CH', GMC: 'GM', BUICK: 'BU', CADILLAC: 'CA' };
-    const abbr = brandAbbr[base.marketingMake] || base.marketingMake;
-    const subjectLine = `${ec}_${base.modelYear}_${abbr}_${base.marketingModel.replace(/\s+/g,'_')}_${combo.model}_${intColor}_${combo.ext}_${combo.trim}`;
-    return {
-      subjectLine,
-      message: {
-        id: String(msgIdStart + idx),
-        delivery: {
-          mapping: { name: "targetData" },
-          label: delivLabel
+  const records = [];
+  let msgIdx = 0;
+  for (const ec of eventCodes) {
+    // Code 38 always gets two records: loyaltyMemberFlag N and Y
+    const loyaltyVariants = ec === '38' ? ['N', 'Y'] : [base.loyaltyMemberFlag];
+    for (const loyaltyFlag of loyaltyVariants) {
+      const combo = rand(validCombos);
+      const intColor = rand(interiorColors);
+      const subjectLine = `${ec}_${base.modelYear}_${abbr}_${base.marketingModel.replace(/\s+/g,'_')}_${combo.model}_${intColor}_${combo.ext}_${combo.trim}`;
+      records.push({
+        subjectLine,
+        message: {
+          id: String(msgIdStart + msgIdx),
+          delivery: {
+            mapping: { name: "targetData" },
+            label: delivLabel
+          }
+        },
+        targetData: {
+          ...base,
+          loyaltyMemberFlag: loyaltyFlag,
+          eventCode: ec,
+          trim: combo.trim,
+          exteriorColor: combo.ext,
+          merchandisingModelCode: combo.model,
+          interiorColor: intColor,
         }
-      },
-      targetData: {
-        ...base,
-        eventCode: ec,
-        trim: combo.trim,
-        exteriorColor: combo.ext,
-        merchandisingModelCode: combo.model,
-        interiorColor: intColor,
-      }
-    };
-  });
+      });
+      msgIdx++;
+    }
+  }
 
   generatedJSON = records;
   renderOutput(records);
@@ -651,7 +659,7 @@ renderAll();
   updateCombosCount();
   // Show notification
   const note = document.createElement('div');
-  note.style.cssText = 'position:fixed;bottom:20px;right:20px;background:rgba(200,255,0,0.1);border:1px solid rgba(200,255,0,0.3);color:var(--accent);font-family:var(--mono);font-size:12px;padding:10px 16px;border-radius:6px;z-index:999;';
+  note.style.cssText = 'position:fixed;bottom:20px;right:20px;background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);color:var(--accent);font-family:var(--mono);font-size:12px;padding:10px 16px;border-radius:6px;z-index:999;';
   const count = pairs.split('\n').filter(Boolean).length;
   note.textContent = `✓ ${count} combinaciones cargadas desde Image Checker`;
   document.body.appendChild(note);
