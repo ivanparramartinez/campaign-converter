@@ -260,7 +260,7 @@ let currentView = 'all';
 
 // ── Diff key ───────────────────────────────────────────────────────────────
 function comboKey(obj) {
-  return `${(obj.MMC||'').toUpperCase()}|${(obj.BRAND||'').toUpperCase()}|${obj.MODEL_YR}`;
+  return `${(obj.MMC||'').toUpperCase()}|${(obj.BRAND||'').toUpperCase()}|${obj.MODEL_YR}|${(obj.MODEL_NAME||'').toUpperCase()}`;
 }
 
 // ── Existing data ──────────────────────────────────────────────────────────
