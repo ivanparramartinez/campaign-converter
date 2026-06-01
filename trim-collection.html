@@ -115,6 +115,21 @@
 
   .action-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
 
+  /* DIFF */
+  .diff-toggle-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .diff-toggle {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.07em;
+    padding: 4px 12px; border-radius: 3px; border: 1px solid var(--border2);
+    cursor: pointer; background: transparent; color: var(--muted2); transition: all 0.13s;
+  }
+  .diff-toggle.active { background: var(--surface2); color: var(--text); border-color: var(--accent); }
+  .diff-toggle.new-active  { background: rgba(0,230,118,0.08); color: var(--success); border-color: var(--success); }
+  .diff-toggle.dup-active  { background: rgba(255,187,0,0.08); color: var(--warning); border-color: var(--warning); }
+  .chip.success { border-color: rgba(0,230,118,0.35); color: var(--success); background: rgba(0,230,118,0.06); }
+  .chip.warning { border-color: rgba(255,187,0,0.35); color: var(--warning); background: rgba(255,187,0,0.06); }
+  .json-new { background: rgba(0,230,118,0.07); display: block; border-left: 2px solid var(--success); padding-left: 4px; }
+  .json-dup { background: rgba(255,187,0,0.07); display: block; border-left: 2px solid var(--warning); padding-left: 4px; }
+
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
   ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
@@ -214,6 +229,20 @@
       <div class="tag-list" id="pairList"></div>
     </div>
 
+    <!-- EXISTING DATA (DIFF) -->
+    <div>
+      <div class="section-title">Existing Data <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0.05em">(optional — for diff)</span></div>
+      <div class="hint">Paste existing JSON array to highlight duplicates</div>
+      <textarea id="existingJson" rows="5" placeholder='[{"BRAND":"GMC","MODEL_YR":2024,"MMC":"TC10753","TRIM":"3SA","TRIM_TEXT":"SLE"}, ...]' style="font-size:11px"></textarea>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:5px">
+        <span id="existingStatus" style="font-family:var(--mono);font-size:10px;color:var(--muted)">— no data loaded —</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" onclick="loadExisting()">Load</button>
+          <button class="btn btn-sm" onclick="clearExisting()">Clear</button>
+        </div>
+      </div>
+    </div>
+
     <!-- GENERATE -->
     <div>
       <div class="run-row">
@@ -234,6 +263,12 @@
       </div>
     </div>
 
+    <div class="diff-toggle-row" id="diffToggles" style="display:none;margin-bottom:10px">
+      <button class="diff-toggle active" id="tog-all" onclick="setView('all')">All</button>
+      <button class="diff-toggle" id="tog-new" onclick="setView('new')">🟢 New only</button>
+      <button class="diff-toggle" id="tog-dup" onclick="setView('dup')">🟡 Duplicates only</button>
+    </div>
+
     <pre id="outputBox"><span style="color:var(--muted)">// Configure the fields and press Generate</span></pre>
 
     <div class="action-row" id="actionRow" style="display:none">
@@ -244,13 +279,44 @@
 
 <script>
 const state = { years: [], mmcs: [], pairs: [] };
-let generated = null;
+let generated = null;       // array of all combos with _isDup flag
+let existingKeys = new Set(); // BRAND|MODEL_YR|MMC|TRIM keys
+let currentView = 'all';
 
 const cfg = {
   years:  { inputId: 'inYear',  listId: 'yearList',  countId: 'yearsCount',  label: 'year' },
   mmcs:   { inputId: 'inMmc',   listId: 'mmcList',   countId: 'mmcsCount',   label: 'code' },
 };
 
+// ── Existing data helpers ──────────────────────────────────────────────────
+function comboKey(obj) {
+  return `${(obj.BRAND||'').toUpperCase()}|${obj.MODEL_YR}|${(obj.MMC||'').toUpperCase()}|${(obj.TRIM||'').toUpperCase()}`;
+}
+
+function loadExisting() {
+  const raw = document.getElementById('existingJson').value.trim();
+  if (!raw) return;
+  try {
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) throw new Error('Not an array');
+    existingKeys = new Set(arr.map(comboKey));
+    document.getElementById('existingStatus').textContent = `✓ ${existingKeys.size} existing entries loaded`;
+    document.getElementById('existingStatus').style.color = 'var(--success)';
+  } catch(e) {
+    document.getElementById('existingStatus').textContent = '✗ Invalid JSON — check format';
+    document.getElementById('existingStatus').style.color = 'var(--danger)';
+  }
+}
+
+function clearExisting() {
+  existingKeys = new Set();
+  document.getElementById('existingJson').value = '';
+  document.getElementById('existingStatus').textContent = '— no data loaded —';
+  document.getElementById('existingStatus').style.color = 'var(--muted)';
+  if (generated) renderOutput();
+}
+
+// ── List rendering ─────────────────────────────────────────────────────────
 function parseTokens(str) {
   return str.split(/[,\s\n]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
 }
@@ -319,6 +385,7 @@ function bulkAddPairs() {
 
 function removePair(i) { state.pairs.splice(i, 1); renderPairList(); }
 
+// ── Generate ───────────────────────────────────────────────────────────────
 function generate() {
   const brandVal = document.getElementById('inBrand').value;
   const { years, mmcs, pairs } = state;
@@ -326,35 +393,107 @@ function generate() {
     alert('Selecciona una marca y completa Year, MMC y al menos un par de Trim.');
     return;
   }
-  const brands = [brandVal];
   const combos = [];
-  for (const b of brands) for (const y of years) for (const m of mmcs) for (const p of pairs)
-    combos.push({ BRAND: b, MODEL_YR: isNaN(parseInt(y)) ? y : parseInt(y), MMC: m, TRIM: p.trim, TRIM_TEXT: p.text });
+  for (const y of years) for (const m of mmcs) for (const p of pairs) {
+    const obj = { BRAND: brandVal, MODEL_YR: isNaN(parseInt(y)) ? y : parseInt(y), MMC: m, TRIM: p.trim, TRIM_TEXT: p.text };
+    obj._isDup = existingKeys.size > 0 && existingKeys.has(comboKey(obj));
+    combos.push(obj);
+  }
 
   generated = combos;
+  currentView = 'all';
   document.getElementById('totalCount').textContent = combos.length;
 
+  const newCount = combos.filter(c => !c._isDup).length;
+  const dupCount = combos.filter(c => c._isDup).length;
+
   // Stats chips
-  document.getElementById('statsChips').innerHTML = [
+  const chips = [
     `<span class="chip accent"><b>${combos.length}</b> combinations</span>`,
     `<span class="chip"><b>${brandVal}</b></span>`,
     `<span class="chip"><b>${years.length}</b> year${years.length!==1?'s':''}</span>`,
     `<span class="chip"><b>${mmcs.length}</b> MMC${mmcs.length!==1?'s':''}</span>`,
     `<span class="chip"><b>${pairs.length}</b> trim pair${pairs.length!==1?'s':''}</span>`,
-  ].join('');
+  ];
+  if (existingKeys.size > 0) {
+    chips.push(`<span class="chip success"><b>${newCount}</b> new</span>`);
+    chips.push(`<span class="chip warning"><b>${dupCount}</b> duplicate${dupCount!==1?'s':''}</span>`);
+  }
+  document.getElementById('statsChips').innerHTML = chips.join('');
 
-  // Syntax-highlighted output
-  const raw = JSON.stringify(combos, null, 2);
-  const highlighted = raw
+  // Show/hide diff toggles
+  document.getElementById('diffToggles').style.display = existingKeys.size > 0 ? 'flex' : 'none';
+  setView('all');
+}
+
+// ── View toggle ────────────────────────────────────────────────────────────
+function setView(v) {
+  currentView = v;
+  ['all','new','dup'].forEach(id => {
+    const btn = document.getElementById(`tog-${id}`);
+    btn.className = 'diff-toggle' + (id === v ? (id==='new' ? ' new-active' : id==='dup' ? ' dup-active' : ' active') : '');
+  });
+  renderOutput();
+}
+
+function renderOutput() {
+  if (!generated) return;
+  const hasDiff = existingKeys.size > 0;
+  const items = generated.filter(c => {
+    if (currentView === 'new') return !c._isDup;
+    if (currentView === 'dup') return c._isDup;
+    return true;
+  });
+
+  // Strip internal _isDup before displaying
+  const clean = items.map(({ _isDup, ...rest }) => rest);
+
+  if (hasDiff) {
+    // Build line-by-line highlighted JSON with diff coloring per entry
+    const lines = [];
+    lines.push('[');
+    items.forEach((combo, idx) => {
+      const { _isDup, ...rest } = combo;
+      const entryLines = JSON.stringify(rest, null, 2).split('\n');
+      const cls = _isDup ? 'json-dup' : 'json-new';
+      entryLines.forEach((line, li) => {
+        // Add comma on closing brace if not last item
+        let out = line;
+        if (li === entryLines.length - 1 && idx < items.length - 1) out += ',';
+        lines.push(`<span class="${cls}">${highlightLine(out)}</span>`);
+      });
+    });
+    lines.push(']');
+    document.getElementById('outputBox').innerHTML = lines.join('\n');
+  } else {
+    const raw = JSON.stringify(clean, null, 2);
+    document.getElementById('outputBox').innerHTML = highlightJson(raw);
+  }
+}
+
+function highlightLine(line) {
+  return line
     .replace(/("[\w_]+")\s*:/g, '<span class="json-key">$1</span>:')
     .replace(/:\s*("(?:[^"\\]|\\.)*")/g, ': <span class="json-str">$1</span>')
     .replace(/:\s*(\d+)/g, ': <span class="json-num">$1</span>');
-  document.getElementById('outputBox').innerHTML = highlighted;
 }
 
+function highlightJson(raw) {
+  return raw
+    .replace(/("[\w_]+")\s*:/g, '<span class="json-key">$1</span>:')
+    .replace(/:\s*("(?:[^"\\]|\\.)*")/g, ': <span class="json-str">$1</span>')
+    .replace(/:\s*(\d+)/g, ': <span class="json-num">$1</span>');
+}
+
+// ── Copy / Download ────────────────────────────────────────────────────────
 function copyOutput() {
   if (!generated) { alert('Generate first.'); return; }
-  navigator.clipboard.writeText(JSON.stringify(generated, null, 2)).then(() => {
+  const items = generated.filter(c => {
+    if (currentView === 'new') return !c._isDup;
+    if (currentView === 'dup') return c._isDup;
+    return true;
+  }).map(({ _isDup, ...rest }) => rest);
+  navigator.clipboard.writeText(JSON.stringify(items, null, 2)).then(() => {
     const btn = document.getElementById('copyBtn');
     btn.textContent = '✓ Copied';
     setTimeout(() => btn.textContent = '⎘ Copy', 2000);
@@ -363,9 +502,15 @@ function copyOutput() {
 
 function downloadOutput() {
   if (!generated) { alert('Generate first.'); return; }
+  const items = generated.filter(c => {
+    if (currentView === 'new') return !c._isDup;
+    if (currentView === 'dup') return c._isDup;
+    return true;
+  }).map(({ _isDup, ...rest }) => rest);
+  const suffix = currentView === 'new' ? '-new' : currentView === 'dup' ? '-duplicates' : '';
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([JSON.stringify(generated, null, 2)], { type: 'application/json' }));
-  a.download = 'vehicle-combinations.json';
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(items, null, 2)], { type: 'application/json' }));
+  a.download = `vehicle-combinations${suffix}.json`;
   a.click();
 }
 
@@ -376,12 +521,14 @@ function resetAll() {
   ['years','mmcs'].forEach(k => renderList(k));
   renderPairList();
   generated = null;
+  currentView = 'all';
   document.getElementById('totalCount').textContent = '0';
   document.getElementById('statsChips').innerHTML = '';
+  document.getElementById('diffToggles').style.display = 'none';
   document.getElementById('outputBox').innerHTML = '<span style="color:var(--muted)">// Configure the fields and press Generate</span>';
 }
 
-// Enter shortcuts
+// ── Enter shortcuts ────────────────────────────────────────────────────────
 document.getElementById('inYear').addEventListener('keydown', e => { if(e.key==='Enter') bulkAddSimple('years','inYear','yearList'); });
 document.getElementById('inMmc').addEventListener('keydown', e => { if(e.key==='Enter') bulkAddSimple('mmcs','inMmc','mmcList'); });
 document.getElementById('inTrim').addEventListener('keydown', e => { if(e.key==='Enter') { document.getElementById('inTrimText').focus(); } });
