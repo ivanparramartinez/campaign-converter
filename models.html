@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GM Trim Collection Creator</title>
+<title>GM Model Collection Creator</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #0a0a0a; --surface: #141414; --surface2: #1c1c1c;
     --border: #262626; --border2: #333;
-    --accent: #f87171; --accent2: #00c8ff;
+    --accent: #34d399; --accent2: #00c8ff;
     --text: #e8e8e0; --muted: #555; --muted2: #888;
     --danger: #ff4455; --success: #00e676; --warning: #ffbb00;
     --mono: 'IBM Plex Mono', monospace; --sans: 'IBM Plex Sans', sans-serif;
@@ -41,16 +41,14 @@
 
   label { display: block; font-size: 11px; font-weight: 500; color: var(--muted2); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
 
-  input[type="text"], textarea {
+  input[type="text"], textarea, select {
     width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text);
     font-family: var(--mono); font-size: 13px; padding: 7px 11px; border-radius: 4px; outline: none;
-    transition: border-color 0.15s; text-transform: none;
+    transition: border-color 0.15s;
   }
-  input[type="text"]:focus, textarea:focus { border-color: var(--accent); }
+  input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--accent); }
   input::placeholder, textarea::placeholder { color: var(--muted); }
   textarea { resize: vertical; line-height: 1.6; }
-
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
 
   .hint { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 3px; margin-bottom: 10px; }
 
@@ -61,7 +59,7 @@
     background: var(--surface2); border: 1px solid var(--border2);
     border-radius: 3px; padding: 3px 9px;
   }
-  .tag.pair { background: rgba(0,200,255,0.07); border-color: rgba(0,200,255,0.25); color: var(--accent2); }
+  .tag.pair { background: rgba(52,211,153,0.07); border-color: rgba(52,211,153,0.25); color: var(--accent); }
   .tag .del { cursor: pointer; color: var(--muted); font-size: 14px; line-height: 1; transition: color 0.1s; }
   .tag .del:hover { color: var(--danger); }
   .tag-header { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
@@ -80,14 +78,13 @@
     cursor: pointer; transition: all 0.15s; background: transparent; color: var(--text);
   }
   .btn:hover { border-color: var(--accent); color: var(--accent); }
-  .btn-accent { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
-  .btn-accent:hover { background: #ef4444; border-color: #ef4444; color: #fff; }
+  .btn-accent { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+  .btn-accent:hover { background: #10b981; border-color: #10b981; color: #000; }
   .btn-sm { padding: 5px 9px; font-size: 11px; }
   .btn-icon { padding: 7px 10px; }
 
   .run-row { display: flex; gap: 8px; flex-wrap: wrap; }
 
-  /* MAIN */
   .main { padding: 24px; overflow-y: auto; display: flex; flex-direction: column; }
 
   .output-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
@@ -98,7 +95,9 @@
     border-radius: 3px; padding: 3px 10px; color: var(--muted2);
   }
   .chip b { color: var(--text); font-weight: 600; }
-  .chip.accent { border-color: rgba(200,255,0,0.3); color: var(--accent); background: rgba(200,255,0,0.05); }
+  .chip.accent { border-color: rgba(52,211,153,0.35); color: var(--accent); background: rgba(52,211,153,0.06); }
+  .chip.success { border-color: rgba(0,230,118,0.35); color: var(--success); background: rgba(0,230,118,0.06); }
+  .chip.warning { border-color: rgba(255,187,0,0.35); color: var(--warning); background: rgba(255,187,0,0.06); }
 
   pre {
     background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
@@ -109,26 +108,18 @@
   .json-key { color: var(--accent2); }
   .json-str { color: #a8d8a8; }
   .json-num { color: #ffd580; }
+  .json-new { background: rgba(0,230,118,0.07); display: block; border-left: 2px solid var(--success); padding-left: 4px; }
+  .json-dup { background: rgba(255,187,0,0.07); display: block; border-left: 2px solid var(--warning); padding-left: 4px; }
 
-  .empty-state { text-align: center; padding: 80px 20px; font-family: var(--mono); font-size: 13px; color: var(--muted); line-height: 2.2; }
-  .empty-state .big { font-size: 28px; margin-bottom: 8px; display: block; opacity: 0.3; }
-
-  .action-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
-
-  /* DIFF */
   .diff-toggle-row { display: flex; gap: 6px; flex-wrap: wrap; }
   .diff-toggle {
     font-family: var(--mono); font-size: 11px; letter-spacing: 0.07em;
     padding: 4px 12px; border-radius: 3px; border: 1px solid var(--border2);
     cursor: pointer; background: transparent; color: var(--muted2); transition: all 0.13s;
   }
-  .diff-toggle.active { background: var(--surface2); color: var(--text); border-color: var(--accent); }
-  .diff-toggle.new-active  { background: rgba(0,230,118,0.08); color: var(--success); border-color: var(--success); }
-  .diff-toggle.dup-active  { background: rgba(255,187,0,0.08); color: var(--warning); border-color: var(--warning); }
-  .chip.success { border-color: rgba(0,230,118,0.35); color: var(--success); background: rgba(0,230,118,0.06); }
-  .chip.warning { border-color: rgba(255,187,0,0.35); color: var(--warning); background: rgba(255,187,0,0.06); }
-  .json-new { background: rgba(0,230,118,0.07); display: block; border-left: 2px solid var(--success); padding-left: 4px; }
-  .json-dup { background: rgba(255,187,0,0.07); display: block; border-left: 2px solid var(--warning); padding-left: 4px; }
+  .diff-toggle.active     { background: var(--surface2); color: var(--text); border-color: var(--accent); }
+  .diff-toggle.new-active { background: rgba(0,230,118,0.08); color: var(--success); border-color: var(--success); }
+  .diff-toggle.dup-active { background: rgba(255,187,0,0.08); color: var(--warning); border-color: var(--warning); }
 
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
@@ -141,23 +132,22 @@
 </style>
 </head>
 <body>
+
+<!-- NAV -->
 <div style="border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:16px;background:var(--bg);position:sticky;top:0;z-index:300">
   <a href="index.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;display:flex;align-items:center;gap:6px">← Campaign Converter</a>
   <div style="flex:1"></div>
-  <a href="checker.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Checker</a>
-  <a href="generator.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Generator</a>
-  <a href="trim-collection.html" style="font-family:var(--mono);font-size:11px;color:var(--accent);text-decoration:none;padding:4px 10px;border-radius:3px">Trim Collection</a>
-  <a href="exteriors.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Exteriors</a>
-  <a href="models.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Models</a>
-  <a href="interior.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Interior</a>
+  <a href="checker.html"         style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Checker</a>
+  <a href="generator.html"       style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Generator</a>
+  <a href="trim-collection.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Trim Collection</a>
+  <a href="exteriors.html"       style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Exteriors</a>
+  <a href="models.html"          style="font-family:var(--mono);font-size:11px;color:var(--accent);text-decoration:none;padding:4px 10px;border-radius:3px">Models</a>
+  <a href="interior.html"        style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Interior</a>
 </div>
 
-
 <header>
-  <div class="logo">GM <span>//</span> Trim Collection Creator</div>
-  <div class="header-stats">
-    Combinations: <b id="totalCount">0</b>
-  </div>
+  <div class="logo">GM <span>//</span> Model Collection Creator</div>
+  <div class="header-stats">Combinations: <b id="totalCount">0</b></div>
 </header>
 
 <div class="layout">
@@ -168,7 +158,7 @@
     <!-- BRAND -->
     <div>
       <div class="section-title">Brand</div>
-      <select id="inBrand" style="width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:13px;padding:7px 11px;border-radius:4px;outline:none;text-transform:none">
+      <select id="inBrand">
         <option value="">— Select brand —</option>
         <option value="GMC">GMC</option>
         <option value="CHEVROLET">CHEVROLET</option>
@@ -182,51 +172,36 @@
       <div class="section-title">Model Year</div>
       <div class="hint">Comma or space separated</div>
       <div style="display:flex;gap:7px">
-        <input type="text" id="inYear" placeholder="2023, 2024, 2025">
+        <input type="text" id="inYear" placeholder="2024, 2025">
         <button class="btn btn-sm" onclick="bulkAddSimple('years','inYear','yearList')">+</button>
       </div>
       <div class="tag-header">
         <span class="tag-count" id="yearsCount">0 years</span>
-        <button class="tag-clear" onclick="clearField('years','yearList')">clear</button>
+        <button class="tag-clear" onclick="clearField('years')">clear</button>
       </div>
       <div class="tag-list" id="yearList"></div>
     </div>
 
-    <!-- MMC -->
+    <!-- MMC / MODEL NAME PAIRS -->
     <div>
-      <div class="section-title">MMC Codes</div>
-      <div class="hint">Comma or space separated</div>
-      <div style="display:flex;gap:7px">
-        <input type="text" id="inMmc" placeholder="TC10753, TC10543">
-        <button class="btn btn-sm" onclick="bulkAddSimple('mmcs','inMmc','mmcList')">+</button>
-      </div>
-      <div class="tag-header">
-        <span class="tag-count" id="mmcsCount">0 codes</span>
-        <button class="tag-clear" onclick="clearField('mmcs','mmcList')">clear</button>
-      </div>
-      <div class="tag-list" id="mmcList"></div>
-    </div>
-
-    <!-- TRIM PAIRS -->
-    <div>
-      <div class="section-title">Trim / Trim Text pairs</div>
+      <div class="section-title">MMC / Model Name pairs</div>
       <div class="pair-row">
         <div>
-          <label>Trim code</label>
-          <input type="text" id="inTrim" placeholder="3SA">
+          <label>MMC code</label>
+          <input type="text" id="inMmc" placeholder="TT35743">
         </div>
         <div>
-          <label>Trim text</label>
-          <input type="text" id="inTrimText" placeholder="SLE">
+          <label>Model name</label>
+          <input type="text" id="inModelName" placeholder="Hummer EV Truck">
         </div>
         <button class="btn btn-icon" onclick="addPair()" title="Add pair" style="margin-top:18px">+</button>
       </div>
-      <div class="hint">Or bulk — one pair per line: <code style="color:var(--accent2)">3SA SLE</code></div>
-      <textarea id="bulkTrim" rows="3" placeholder="3SA SLE&#10;3SB SLT&#10;3SC Denali"></textarea>
+      <div class="hint">Or bulk — one pair per line: <code style="color:var(--accent)">TT35743 Hummer EV Truck</code></div>
+      <textarea id="bulkModels" rows="4" placeholder="TT35743 Hummer EV Truck&#10;TC10543 Canyon&#10;TK10906 Sierra 1500"></textarea>
       <button class="btn btn-sm" onclick="bulkAddPairs()" style="margin-top:6px;width:100%">↑ Add all lines</button>
       <div class="tag-header">
         <span class="tag-count" id="pairsCount">0 pairs</span>
-        <button class="tag-clear" onclick="clearField('pairs','pairList')">clear</button>
+        <button class="tag-clear" onclick="clearField('pairs')">clear</button>
       </div>
       <div class="tag-list" id="pairList"></div>
     </div>
@@ -235,7 +210,7 @@
     <div>
       <div class="section-title">Existing Data <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0.05em">(optional — for diff)</span></div>
       <div class="hint">Paste existing JSON array to highlight duplicates</div>
-      <textarea id="existingJson" rows="5" placeholder='[{"BRAND":"GMC","MODEL_YR":2024,"MMC":"TC10753","TRIM":"3SA","TRIM_TEXT":"SLE"}, ...]' style="font-size:11px"></textarea>
+      <textarea id="existingJson" rows="4" placeholder='[{"MMC":"TT35743","BRAND":"GMC","MODEL_YR":2025,"MODEL_NAME":"Hummer EV Truck"}, ...]' style="font-size:11px"></textarea>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:5px">
         <span id="existingStatus" style="font-family:var(--mono);font-size:10px;color:var(--muted)">— no data loaded —</span>
         <div style="display:flex;gap:6px">
@@ -273,29 +248,22 @@
     </div>
 
     <pre id="outputBox"><span style="color:var(--muted)">// Configure the fields and press Generate</span></pre>
-
-    <div class="action-row" id="actionRow" style="display:none">
-    </div>
   </div>
 
 </div>
 
 <script>
-const state = { years: [], mmcs: [], pairs: [] };
-let generated = null;       // array of all combos with _isDup flag
-let existingKeys = new Set(); // BRAND|MODEL_YR|MMC|TRIM keys
+const state = { years: [], pairs: [] };
+let generated = null;
+let existingKeys = new Set();
 let currentView = 'all';
 
-const cfg = {
-  years:  { inputId: 'inYear',  listId: 'yearList',  countId: 'yearsCount',  label: 'year' },
-  mmcs:   { inputId: 'inMmc',   listId: 'mmcList',   countId: 'mmcsCount',   label: 'code' },
-};
-
-// ── Existing data helpers ──────────────────────────────────────────────────
+// ── Diff key ───────────────────────────────────────────────────────────────
 function comboKey(obj) {
-  return `${(obj.BRAND||'').toUpperCase()}|${obj.MODEL_YR}|${(obj.MMC||'').toUpperCase()}|${(obj.TRIM||'').toUpperCase()}`;
+  return `${(obj.MMC||'').toUpperCase()}|${(obj.BRAND||'').toUpperCase()}|${obj.MODEL_YR}`;
 }
 
+// ── Existing data ──────────────────────────────────────────────────────────
 function loadExisting() {
   const raw = document.getElementById('existingJson').value.trim();
   if (!raw) return;
@@ -319,21 +287,23 @@ function clearExisting() {
   if (generated) renderOutput();
 }
 
-// ── List rendering ─────────────────────────────────────────────────────────
+// ── List helpers ───────────────────────────────────────────────────────────
 function parseTokens(str) {
-  return str.split(/[,\s\n]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
+  return str.split(/[,\s\n]+/).map(s => s.trim()).filter(Boolean);
 }
 
 function bulkAddSimple(key, inputId, listId) {
   const inp = document.getElementById(inputId);
-  parseTokens(inp.value).forEach(v => { if (!state[key].includes(v)) state[key].push(v); });
+  parseTokens(inp.value).forEach(v => {
+    if (!state[key].includes(v)) state[key].push(v);
+  });
   inp.value = '';
   renderList(key);
 }
 
-function clearField(key, listId) {
+function clearField(key) {
   state[key] = [];
-  renderList(key);
+  key === 'pairs' ? renderPairList() : renderList(key);
 }
 
 function removeItem(key, i) {
@@ -342,10 +312,12 @@ function removeItem(key, i) {
 }
 
 function renderList(key) {
-  const c = cfg[key];
-  if (!c) { renderPairList(); return; }
-  const el = document.getElementById(c.listId);
-  el.innerHTML = state[key].map((v, i) =>
+  const cfgMap = {
+    years: { listId: 'yearList', countId: 'yearsCount', label: 'year' },
+  };
+  const c = cfgMap[key];
+  if (!c) return;
+  document.getElementById(c.listId).innerHTML = state[key].map((v, i) =>
     `<span class="tag">${v}<span class="del" onclick="removeItem('${key}',${i})">×</span></span>`
   ).join('');
   const n = state[key].length;
@@ -353,36 +325,35 @@ function renderList(key) {
 }
 
 function renderPairList() {
-  const el = document.getElementById('pairList');
-  el.innerHTML = state.pairs.map((p, i) =>
-    `<span class="tag pair">${p.trim} → ${p.text}<span class="del" onclick="removePair(${i})">×</span></span>`
+  document.getElementById('pairList').innerHTML = state.pairs.map((p, i) =>
+    `<span class="tag pair">${p.mmc} → ${p.name}<span class="del" onclick="removePair(${i})">×</span></span>`
   ).join('');
   const n = state.pairs.length;
   document.getElementById('pairsCount').textContent = `${n} pair${n !== 1 ? 's' : ''}`;
 }
 
 function addPair() {
-  const trim = document.getElementById('inTrim').value.trim().toUpperCase();
-  const text = document.getElementById('inTrimText').value.trim();
-  if (!trim || !text) return;
-  if (!state.pairs.find(p => p.trim === trim && p.text === text)) state.pairs.push({ trim, text });
-  document.getElementById('inTrim').value = '';
-  document.getElementById('inTrimText').value = '';
-  document.getElementById('inTrim').focus();
+  const mmc  = document.getElementById('inMmc').value.trim().toUpperCase();
+  const name = document.getElementById('inModelName').value.trim();
+  if (!mmc || !name) return;
+  if (!state.pairs.find(p => p.mmc === mmc && p.name === name)) state.pairs.push({ mmc, name });
+  document.getElementById('inMmc').value = '';
+  document.getElementById('inModelName').value = '';
+  document.getElementById('inMmc').focus();
   renderPairList();
 }
 
 function bulkAddPairs() {
-  const lines = document.getElementById('bulkTrim').value.split('\n').map(l => l.trim()).filter(Boolean);
+  const lines = document.getElementById('bulkModels').value.split('\n').map(l => l.trim()).filter(Boolean);
   lines.forEach(line => {
     const idx = line.search(/\s/);
     if (idx === -1) return;
-    const trim = line.slice(0, idx).toUpperCase();
-    const text = line.slice(idx).trim();
-    if (trim && text && !state.pairs.find(p => p.trim === trim && p.text === text))
-      state.pairs.push({ trim, text });
+    const mmc  = line.slice(0, idx).toUpperCase();
+    const name = line.slice(idx).trim();
+    if (mmc && name && !state.pairs.find(p => p.mmc === mmc && p.name === name))
+      state.pairs.push({ mmc, name });
   });
-  document.getElementById('bulkTrim').value = '';
+  document.getElementById('bulkModels').value = '';
   renderPairList();
 }
 
@@ -391,50 +362,49 @@ function removePair(i) { state.pairs.splice(i, 1); renderPairList(); }
 // ── Generate ───────────────────────────────────────────────────────────────
 function generate() {
   const brandVal = document.getElementById('inBrand').value;
-  const { years, mmcs, pairs } = state;
-  if (!brandVal || !years.length || !mmcs.length || !pairs.length) {
-    alert('Selecciona una marca y completa Year, MMC y al menos un par de Trim.');
+  const { years, pairs } = state;
+  if (!brandVal || !years.length || !pairs.length) {
+    alert('Selecciona una marca y completa Year y al menos un par MMC / Model Name.');
     return;
   }
+
   const combos = [];
-  for (const y of years) for (const m of mmcs) for (const p of pairs) {
-    const obj = { BRAND: brandVal, MODEL_YR: isNaN(parseInt(y)) ? y : parseInt(y), MMC: m, TRIM: p.trim, TRIM_TEXT: p.text };
-    obj._isDup = existingKeys.size > 0 && existingKeys.has(comboKey(obj));
-    combos.push(obj);
-  }
+  for (const y of years)
+    for (const p of pairs) {
+      const yr = isNaN(parseInt(y)) ? y : parseInt(y);
+      const obj = { MMC: p.mmc, BRAND: brandVal, MODEL_YR: yr, MODEL_NAME: p.name };
+      obj._isDup = existingKeys.size > 0 && existingKeys.has(comboKey(obj));
+      combos.push(obj);
+    }
 
   generated = combos;
   currentView = 'all';
   document.getElementById('totalCount').textContent = combos.length;
 
   const newCount = combos.filter(c => !c._isDup).length;
-  const dupCount = combos.filter(c => c._isDup).length;
+  const dupCount = combos.filter(c =>  c._isDup).length;
 
-  // Stats chips
   const chips = [
     `<span class="chip accent"><b>${combos.length}</b> combinations</span>`,
     `<span class="chip"><b>${brandVal}</b></span>`,
     `<span class="chip"><b>${years.length}</b> year${years.length!==1?'s':''}</span>`,
-    `<span class="chip"><b>${mmcs.length}</b> MMC${mmcs.length!==1?'s':''}</span>`,
-    `<span class="chip"><b>${pairs.length}</b> trim pair${pairs.length!==1?'s':''}</span>`,
+    `<span class="chip"><b>${pairs.length}</b> model${pairs.length!==1?'s':''}</span>`,
   ];
   if (existingKeys.size > 0) {
     chips.push(`<span class="chip success"><b>${newCount}</b> new</span>`);
     chips.push(`<span class="chip warning"><b>${dupCount}</b> duplicate${dupCount!==1?'s':''}</span>`);
   }
   document.getElementById('statsChips').innerHTML = chips.join('');
-
-  // Show/hide diff toggles
   document.getElementById('diffToggles').style.display = existingKeys.size > 0 ? 'flex' : 'none';
   setView('all');
 }
 
-// ── View toggle ────────────────────────────────────────────────────────────
+// ── View / render ──────────────────────────────────────────────────────────
 function setView(v) {
   currentView = v;
   ['all','new','dup'].forEach(id => {
-    const btn = document.getElementById(`tog-${id}`);
-    btn.className = 'diff-toggle' + (id === v ? (id==='new' ? ' new-active' : id==='dup' ? ' dup-active' : ' active') : '');
+    document.getElementById(`tog-${id}`).className =
+      'diff-toggle' + (id === v ? (id==='new' ? ' new-active' : id==='dup' ? ' dup-active' : ' active') : '');
   });
   renderOutput();
 }
@@ -442,46 +412,30 @@ function setView(v) {
 function renderOutput() {
   if (!generated) return;
   const hasDiff = existingKeys.size > 0;
-  const items = generated.filter(c => {
-    if (currentView === 'new') return !c._isDup;
-    if (currentView === 'dup') return c._isDup;
-    return true;
-  });
-
-  // Strip internal _isDup before displaying
-  const clean = items.map(({ _isDup, ...rest }) => rest);
+  const items = generated.filter(c =>
+    currentView === 'new' ? !c._isDup : currentView === 'dup' ? c._isDup : true
+  );
 
   if (hasDiff) {
-    // Build line-by-line highlighted JSON with diff coloring per entry
-    const lines = [];
-    lines.push('[');
+    const lines = ['['];
     items.forEach((combo, idx) => {
       const { _isDup, ...rest } = combo;
-      const entryLines = JSON.stringify(rest, null, 2).split('\n');
       const cls = _isDup ? 'json-dup' : 'json-new';
-      entryLines.forEach((line, li) => {
-        // Add comma on closing brace if not last item
+      JSON.stringify(rest, null, 2).split('\n').forEach((line, li, arr) => {
         let out = line;
-        if (li === entryLines.length - 1 && idx < items.length - 1) out += ',';
-        lines.push(`<span class="${cls}">${highlightLine(out)}</span>`);
+        if (li === arr.length - 1 && idx < items.length - 1) out += ',';
+        lines.push(`<span class="${cls}">${hl(out)}</span>`);
       });
     });
     lines.push(']');
     document.getElementById('outputBox').innerHTML = lines.join('\n');
   } else {
-    const raw = JSON.stringify(clean, null, 2);
-    document.getElementById('outputBox').innerHTML = highlightJson(raw);
+    document.getElementById('outputBox').innerHTML =
+      hl(JSON.stringify(items.map(({ _isDup, ...r }) => r), null, 2));
   }
 }
 
-function highlightLine(line) {
-  return line
-    .replace(/("[\w_]+")\s*:/g, '<span class="json-key">$1</span>:')
-    .replace(/:\s*("(?:[^"\\]|\\.)*")/g, ': <span class="json-str">$1</span>')
-    .replace(/:\s*(\d+)/g, ': <span class="json-num">$1</span>');
-}
-
-function highlightJson(raw) {
+function hl(raw) {
   return raw
     .replace(/("[\w_]+")\s*:/g, '<span class="json-key">$1</span>:')
     .replace(/:\s*("(?:[^"\\]|\\.)*")/g, ': <span class="json-str">$1</span>')
@@ -489,14 +443,16 @@ function highlightJson(raw) {
 }
 
 // ── Copy / Download ────────────────────────────────────────────────────────
+function getFiltered() {
+  if (!generated) return [];
+  return generated.filter(c =>
+    currentView === 'new' ? !c._isDup : currentView === 'dup' ? c._isDup : true
+  ).map(({ _isDup, ...r }) => r);
+}
+
 function copyOutput() {
   if (!generated) { alert('Generate first.'); return; }
-  const items = generated.filter(c => {
-    if (currentView === 'new') return !c._isDup;
-    if (currentView === 'dup') return c._isDup;
-    return true;
-  }).map(({ _isDup, ...rest }) => rest);
-  navigator.clipboard.writeText(JSON.stringify(items, null, 2)).then(() => {
+  navigator.clipboard.writeText(JSON.stringify(getFiltered(), null, 2)).then(() => {
     const btn = document.getElementById('copyBtn');
     btn.textContent = '✓ Copied';
     setTimeout(() => btn.textContent = '⎘ Copy', 2000);
@@ -505,13 +461,7 @@ function copyOutput() {
 
 function copyOutputFlat() {
   if (!generated) { alert('Generate first.'); return; }
-  const items = generated.filter(c => {
-    if (currentView === 'new') return !c._isDup;
-    if (currentView === 'dup') return c._isDup;
-    return true;
-  }).map(({ _isDup, ...rest }) => rest);
-  const text = items.map(o => JSON.stringify(o, null, 2)).join(',\n');
-  navigator.clipboard.writeText(text).then(() => {
+  navigator.clipboard.writeText(getFiltered().map(o => JSON.stringify(o, null, 2)).join(',\n')).then(() => {
     const btn = document.getElementById('copyFlatBtn');
     btn.textContent = '✓ Copied';
     setTimeout(() => btn.textContent = '⎘ Copy objects', 2000);
@@ -520,26 +470,20 @@ function copyOutputFlat() {
 
 function downloadOutput() {
   if (!generated) { alert('Generate first.'); return; }
-  const items = generated.filter(c => {
-    if (currentView === 'new') return !c._isDup;
-    if (currentView === 'dup') return c._isDup;
-    return true;
-  }).map(({ _isDup, ...rest }) => rest);
   const suffix = currentView === 'new' ? '-new' : currentView === 'dup' ? '-duplicates' : '';
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([JSON.stringify(items, null, 2)], { type: 'application/json' }));
-  a.download = `vehicle-combinations${suffix}.json`;
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(getFiltered(), null, 2)], { type: 'application/json' }));
+  a.download = `models${suffix}.json`;
   a.click();
 }
 
 function resetAll() {
-  state.years = []; state.mmcs = []; state.pairs = [];
+  state.years = []; state.pairs = [];
   document.getElementById('inBrand').value = '';
-  ['inYear','inMmc','inTrim','inTrimText','bulkTrim'].forEach(id => document.getElementById(id).value = '');
-  ['years','mmcs'].forEach(k => renderList(k));
+  ['inYear','inMmc','inModelName','bulkModels'].forEach(id => document.getElementById(id).value = '');
+  renderList('years');
   renderPairList();
-  generated = null;
-  currentView = 'all';
+  generated = null; currentView = 'all';
   document.getElementById('totalCount').textContent = '0';
   document.getElementById('statsChips').innerHTML = '';
   document.getElementById('diffToggles').style.display = 'none';
@@ -547,10 +491,9 @@ function resetAll() {
 }
 
 // ── Enter shortcuts ────────────────────────────────────────────────────────
-document.getElementById('inYear').addEventListener('keydown', e => { if(e.key==='Enter') bulkAddSimple('years','inYear','yearList'); });
-document.getElementById('inMmc').addEventListener('keydown', e => { if(e.key==='Enter') bulkAddSimple('mmcs','inMmc','mmcList'); });
-document.getElementById('inTrim').addEventListener('keydown', e => { if(e.key==='Enter') { document.getElementById('inTrimText').focus(); } });
-document.getElementById('inTrimText').addEventListener('keydown', e => { if(e.key==='Enter') addPair(); });
+document.getElementById('inYear').addEventListener('keydown',      e => { if(e.key==='Enter') bulkAddSimple('years','inYear','yearList'); });
+document.getElementById('inMmc').addEventListener('keydown',       e => { if(e.key==='Enter') document.getElementById('inModelName').focus(); });
+document.getElementById('inModelName').addEventListener('keydown', e => { if(e.key==='Enter') addPair(); });
 </script>
 </body>
 </html>

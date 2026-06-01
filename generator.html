@@ -254,6 +254,7 @@
   <a href="generator.html" style="font-family:var(--mono);font-size:11px;color:var(--accent);text-decoration:none;padding:4px 10px;border-radius:3px">Generator</a>
   <a href="trim-collection.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Trim Collection</a>
   <a href="exteriors.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Exteriors</a>
+  <a href="models.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Models</a>
   <a href="interior.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Interior</a>
 </div>
 
@@ -427,7 +428,7 @@
 
 <script>
 // ─── STATE ───────────────────────────────────────────────────────────────────
-let eventCodes = ["00","30","34","38","40","42","42A","42B","42C","43","48","50","TB1","TB2","TB3","TB4","TB5","TB6","TB7"];
+let eventCodes = ["00","30","34","38","40","42A","42B","42C","43","48","50","TB1","TB2","TB3","TB4","TB5","TB6","TB7"];
 let interiorColors = [];
 // combos are read directly from textarea
 let generatedJSON = null;
@@ -635,7 +636,7 @@ function clearOutput() {
 }
 
 function resetDefaults() {
-  eventCodes = ["00","30","34","38","40","42","42A","42B","42C","43","48","50","TB1","TB2","TB3","TB4","TB5","TB6","TB7"];
+  eventCodes = ["00","30","34","38","40","42A","42B","42C","43","48","50","TB1","TB2","TB3","TB4","TB5","TB6","TB7"];
   interiorColors = [];
   document.getElementById('combosTextarea').value = '';
   updateCombosCount();
