@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GM Trim Collection Creator</title>
+<title>GM Exterior Collection Creator</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -12,6 +12,7 @@
     --accent: #c8ff00; --accent2: #00c8ff;
     --text: #e8e8e0; --muted: #555; --muted2: #888;
     --danger: #ff4455; --success: #00e676; --warning: #ffbb00;
+    --exterior: #ff9f43;
     --mono: 'IBM Plex Mono', monospace; --sans: 'IBM Plex Sans', sans-serif;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -23,9 +24,9 @@
     position: sticky; top: 0; background: var(--bg); z-index: 200;
   }
   .logo { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
-  .logo span { color: var(--accent); }
+  .logo span { color: var(--exterior); }
   .header-stats { display: flex; gap: 20px; font-family: var(--mono); font-size: 11px; color: var(--muted2); }
-  .header-stats b { font-weight: 600; color: var(--accent); }
+  .header-stats b { font-weight: 600; color: var(--exterior); }
 
   .layout { display: grid; grid-template-columns: 360px 1fr; min-height: calc(100vh - 53px); }
 
@@ -37,20 +38,18 @@
     margin-bottom: 10px; padding-bottom: 7px; border-bottom: 1px solid var(--border);
     display: flex; align-items: center; gap: 7px;
   }
-  .section-title::before { content: ''; display: inline-block; width: 5px; height: 5px; background: var(--accent); border-radius: 50%; }
+  .section-title::before { content: ''; display: inline-block; width: 5px; height: 5px; background: var(--exterior); border-radius: 50%; }
 
   label { display: block; font-size: 11px; font-weight: 500; color: var(--muted2); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
 
-  input[type="text"], textarea {
+  input[type="text"], textarea, select {
     width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text);
     font-family: var(--mono); font-size: 13px; padding: 7px 11px; border-radius: 4px; outline: none;
-    transition: border-color 0.15s; text-transform: none;
+    transition: border-color 0.15s;
   }
-  input[type="text"]:focus, textarea:focus { border-color: var(--accent); }
+  input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--exterior); }
   input::placeholder, textarea::placeholder { color: var(--muted); }
   textarea { resize: vertical; line-height: 1.6; }
-
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
 
   .hint { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 3px; margin-bottom: 10px; }
 
@@ -61,7 +60,7 @@
     background: var(--surface2); border: 1px solid var(--border2);
     border-radius: 3px; padding: 3px 9px;
   }
-  .tag.pair { background: rgba(0,200,255,0.07); border-color: rgba(0,200,255,0.25); color: var(--accent2); }
+  .tag.pair { background: rgba(255,159,67,0.07); border-color: rgba(255,159,67,0.25); color: var(--exterior); }
   .tag .del { cursor: pointer; color: var(--muted); font-size: 14px; line-height: 1; transition: color 0.1s; }
   .tag .del:hover { color: var(--danger); }
   .tag-header { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
@@ -79,9 +78,9 @@
     padding: 8px 16px; border-radius: 4px; border: 1px solid var(--border2);
     cursor: pointer; transition: all 0.15s; background: transparent; color: var(--text);
   }
-  .btn:hover { border-color: var(--accent); color: var(--accent); }
-  .btn-accent { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
-  .btn-accent:hover { background: #b0e600; border-color: #b0e600; color: #000; }
+  .btn:hover { border-color: var(--exterior); color: var(--exterior); }
+  .btn-accent { background: var(--exterior); color: #000; border-color: var(--exterior); font-weight: 600; }
+  .btn-accent:hover { background: #e8902e; border-color: #e8902e; color: #000; }
   .btn-sm { padding: 5px 9px; font-size: 11px; }
   .btn-icon { padding: 7px 10px; }
 
@@ -98,7 +97,9 @@
     border-radius: 3px; padding: 3px 10px; color: var(--muted2);
   }
   .chip b { color: var(--text); font-weight: 600; }
-  .chip.accent { border-color: rgba(200,255,0,0.3); color: var(--accent); background: rgba(200,255,0,0.05); }
+  .chip.accent { border-color: rgba(255,159,67,0.35); color: var(--exterior); background: rgba(255,159,67,0.06); }
+  .chip.success { border-color: rgba(0,230,118,0.35); color: var(--success); background: rgba(0,230,118,0.06); }
+  .chip.warning { border-color: rgba(255,187,0,0.35); color: var(--warning); background: rgba(255,187,0,0.06); }
 
   pre {
     background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
@@ -109,26 +110,21 @@
   .json-key { color: var(--accent2); }
   .json-str { color: #a8d8a8; }
   .json-num { color: #ffd580; }
+  .json-new { background: rgba(0,230,118,0.07); display: block; border-left: 2px solid var(--success); padding-left: 4px; }
+  .json-dup { background: rgba(255,187,0,0.07); display: block; border-left: 2px solid var(--warning); padding-left: 4px; }
 
-  .empty-state { text-align: center; padding: 80px 20px; font-family: var(--mono); font-size: 13px; color: var(--muted); line-height: 2.2; }
-  .empty-state .big { font-size: 28px; margin-bottom: 8px; display: block; opacity: 0.3; }
-
-  .action-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
-
-  /* DIFF */
+  /* DIFF toggles */
   .diff-toggle-row { display: flex; gap: 6px; flex-wrap: wrap; }
   .diff-toggle {
     font-family: var(--mono); font-size: 11px; letter-spacing: 0.07em;
     padding: 4px 12px; border-radius: 3px; border: 1px solid var(--border2);
     cursor: pointer; background: transparent; color: var(--muted2); transition: all 0.13s;
   }
-  .diff-toggle.active { background: var(--surface2); color: var(--text); border-color: var(--accent); }
-  .diff-toggle.new-active  { background: rgba(0,230,118,0.08); color: var(--success); border-color: var(--success); }
-  .diff-toggle.dup-active  { background: rgba(255,187,0,0.08); color: var(--warning); border-color: var(--warning); }
-  .chip.success { border-color: rgba(0,230,118,0.35); color: var(--success); background: rgba(0,230,118,0.06); }
-  .chip.warning { border-color: rgba(255,187,0,0.35); color: var(--warning); background: rgba(255,187,0,0.06); }
-  .json-new { background: rgba(0,230,118,0.07); display: block; border-left: 2px solid var(--success); padding-left: 4px; }
-  .json-dup { background: rgba(255,187,0,0.07); display: block; border-left: 2px solid var(--warning); padding-left: 4px; }
+  .diff-toggle.active     { background: var(--surface2); color: var(--text); border-color: var(--exterior); }
+  .diff-toggle.new-active { background: rgba(0,230,118,0.08); color: var(--success); border-color: var(--success); }
+  .diff-toggle.dup-active { background: rgba(255,187,0,0.08); color: var(--warning); border-color: var(--warning); }
+
+  .action-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
 
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
@@ -141,19 +137,20 @@
 </style>
 </head>
 <body>
+
+<!-- NAV -->
 <div style="border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:16px;background:var(--bg);position:sticky;top:0;z-index:300">
   <a href="index.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;display:flex;align-items:center;gap:6px">← Campaign Converter</a>
   <div style="flex:1"></div>
-  <a href="checker.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Checker</a>
-  <a href="generator.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Generator</a>
+  <a href="checker.html"       style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Checker</a>
+  <a href="generator.html"     style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Generator</a>
   <a href="trim-collection.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Trim Collection</a>
-  <a href="exteriors.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Exteriors</a>
-  <a href="interior.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Interior</a>
+  <a href="exteriors.html"     style="font-family:var(--mono);font-size:11px;color:var(--exterior);text-decoration:none;padding:4px 10px;border-radius:3px">Exteriors</a>
+  <a href="interior.html"      style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Interior</a>
 </div>
 
-
 <header>
-  <div class="logo">GM <span>//</span> Trim Collection Creator</div>
+  <div class="logo">GM <span>//</span> Exterior Collection Creator</div>
   <div class="header-stats">
     Combinations: <b id="totalCount">0</b>
   </div>
@@ -167,7 +164,7 @@
     <!-- BRAND -->
     <div>
       <div class="section-title">Brand</div>
-      <select id="inBrand" style="width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:13px;padding:7px 11px;border-radius:4px;outline:none;text-transform:none">
+      <select id="inBrand">
         <option value="">— Select brand —</option>
         <option value="GMC">GMC</option>
         <option value="CHEVROLET">CHEVROLET</option>
@@ -191,37 +188,37 @@
       <div class="tag-list" id="yearList"></div>
     </div>
 
-    <!-- MMC -->
+    <!-- NAMEPLATE -->
     <div>
-      <div class="section-title">MMC Codes</div>
+      <div class="section-title">Vehicle Nameplate</div>
       <div class="hint">Comma or space separated</div>
       <div style="display:flex;gap:7px">
-        <input type="text" id="inMmc" placeholder="TC10753, TC10543">
-        <button class="btn btn-sm" onclick="bulkAddSimple('mmcs','inMmc','mmcList')">+</button>
+        <input type="text" id="inNameplate" placeholder="Acadia, Sierra, Terrain">
+        <button class="btn btn-sm" onclick="bulkAddSimple('nameplates','inNameplate','nameplateList')">+</button>
       </div>
       <div class="tag-header">
-        <span class="tag-count" id="mmcsCount">0 codes</span>
-        <button class="tag-clear" onclick="clearField('mmcs','mmcList')">clear</button>
+        <span class="tag-count" id="nameplatesCount">0 nameplates</span>
+        <button class="tag-clear" onclick="clearField('nameplates','nameplateList')">clear</button>
       </div>
-      <div class="tag-list" id="mmcList"></div>
+      <div class="tag-list" id="nameplateList"></div>
     </div>
 
-    <!-- TRIM PAIRS -->
+    <!-- COLOR PAIRS -->
     <div>
-      <div class="section-title">Trim / Trim Text pairs</div>
+      <div class="section-title">Color Code / Color Name pairs</div>
       <div class="pair-row">
         <div>
-          <label>Trim code</label>
-          <input type="text" id="inTrim" placeholder="3SA">
+          <label>Color code</label>
+          <input type="text" id="inCode" placeholder="GAZ">
         </div>
         <div>
-          <label>Trim text</label>
-          <input type="text" id="inTrimText" placeholder="SLE">
+          <label>Color name</label>
+          <input type="text" id="inColorName" placeholder="Summit White">
         </div>
         <button class="btn btn-icon" onclick="addPair()" title="Add pair" style="margin-top:18px">+</button>
       </div>
-      <div class="hint">Or bulk — one pair per line: <code style="color:var(--accent2)">3SA SLE</code></div>
-      <textarea id="bulkTrim" rows="3" placeholder="3SA SLE&#10;3SB SLT&#10;3SC Denali"></textarea>
+      <div class="hint">Or bulk — one pair per line: <code style="color:var(--exterior)">GAZ Summit White</code></div>
+      <textarea id="bulkColors" rows="4" placeholder="GAZ Summit White&#10;GBA Onyx Black&#10;G7C Satin Steel Metallic"></textarea>
       <button class="btn btn-sm" onclick="bulkAddPairs()" style="margin-top:6px;width:100%">↑ Add all lines</button>
       <div class="tag-header">
         <span class="tag-count" id="pairsCount">0 pairs</span>
@@ -234,7 +231,7 @@
     <div>
       <div class="section-title">Existing Data <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0.05em">(optional — for diff)</span></div>
       <div class="hint">Paste existing JSON array to highlight duplicates</div>
-      <textarea id="existingJson" rows="5" placeholder='[{"BRAND":"GMC","MODEL_YR":2024,"MMC":"TC10753","TRIM":"3SA","TRIM_TEXT":"SLE"}, ...]' style="font-size:11px"></textarea>
+      <textarea id="existingJson" rows="5" placeholder='[{"BRAND":"GMC","MODEL_YR":"2024","VEH_NAME_PLATE":"Acadia","DERIVED_FIELDS1":"GAZ","EXTERIOR_TEXT":"Summit White"}, ...]' style="font-size:11px"></textarea>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:5px">
         <span id="existingStatus" style="font-family:var(--mono);font-size:10px;color:var(--muted)">— no data loaded —</span>
         <div style="display:flex;gap:6px">
@@ -272,29 +269,27 @@
     </div>
 
     <pre id="outputBox"><span style="color:var(--muted)">// Configure the fields and press Generate</span></pre>
-
-    <div class="action-row" id="actionRow" style="display:none">
-    </div>
   </div>
 
 </div>
 
 <script>
-const state = { years: [], mmcs: [], pairs: [] };
-let generated = null;       // array of all combos with _isDup flag
-let existingKeys = new Set(); // BRAND|MODEL_YR|MMC|TRIM keys
+const state = { years: [], nameplates: [], pairs: [] };
+let generated = null;
+let existingKeys = new Set();
 let currentView = 'all';
 
 const cfg = {
-  years:  { inputId: 'inYear',  listId: 'yearList',  countId: 'yearsCount',  label: 'year' },
-  mmcs:   { inputId: 'inMmc',   listId: 'mmcList',   countId: 'mmcsCount',   label: 'code' },
+  years:      { inputId: 'inYear',      listId: 'yearList',      countId: 'yearsCount',      label: 'year' },
+  nameplates: { inputId: 'inNameplate', listId: 'nameplateList', countId: 'nameplatesCount', label: 'nameplate' },
 };
 
-// ── Existing data helpers ──────────────────────────────────────────────────
+// ── Key for diff comparison ────────────────────────────────────────────────
 function comboKey(obj) {
-  return `${(obj.BRAND||'').toUpperCase()}|${obj.MODEL_YR}|${(obj.MMC||'').toUpperCase()}|${(obj.TRIM||'').toUpperCase()}`;
+  return `${(obj.BRAND||'').toUpperCase()}|${obj.MODEL_YR}|${(obj.VEH_NAME_PLATE||'').toUpperCase()}|${(obj.DERIVED_FIELDS1||'').toUpperCase()}`;
 }
 
+// ── Existing data ──────────────────────────────────────────────────────────
 function loadExisting() {
   const raw = document.getElementById('existingJson').value.trim();
   if (!raw) return;
@@ -320,19 +315,21 @@ function clearExisting() {
 
 // ── List rendering ─────────────────────────────────────────────────────────
 function parseTokens(str) {
-  return str.split(/[,\s\n]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
+  return str.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
 }
 
 function bulkAddSimple(key, inputId, listId) {
   const inp = document.getElementById(inputId);
-  parseTokens(inp.value).forEach(v => { if (!state[key].includes(v)) state[key].push(v); });
+  parseTokens(inp.value).forEach(v => {
+    if (!state[key].find(x => x.toLowerCase() === v.toLowerCase())) state[key].push(v);
+  });
   inp.value = '';
   renderList(key);
 }
 
-function clearField(key, listId) {
+function clearField(key) {
   state[key] = [];
-  renderList(key);
+  if (key === 'pairs') renderPairList(); else renderList(key);
 }
 
 function removeItem(key, i) {
@@ -354,34 +351,34 @@ function renderList(key) {
 function renderPairList() {
   const el = document.getElementById('pairList');
   el.innerHTML = state.pairs.map((p, i) =>
-    `<span class="tag pair">${p.trim} → ${p.text}<span class="del" onclick="removePair(${i})">×</span></span>`
+    `<span class="tag pair">${p.code} → ${p.name}<span class="del" onclick="removePair(${i})">×</span></span>`
   ).join('');
   const n = state.pairs.length;
   document.getElementById('pairsCount').textContent = `${n} pair${n !== 1 ? 's' : ''}`;
 }
 
 function addPair() {
-  const trim = document.getElementById('inTrim').value.trim().toUpperCase();
-  const text = document.getElementById('inTrimText').value.trim();
-  if (!trim || !text) return;
-  if (!state.pairs.find(p => p.trim === trim && p.text === text)) state.pairs.push({ trim, text });
-  document.getElementById('inTrim').value = '';
-  document.getElementById('inTrimText').value = '';
-  document.getElementById('inTrim').focus();
+  const code = document.getElementById('inCode').value.trim().toUpperCase();
+  const name = document.getElementById('inColorName').value.trim();
+  if (!code || !name) return;
+  if (!state.pairs.find(p => p.code === code && p.name === name)) state.pairs.push({ code, name });
+  document.getElementById('inCode').value = '';
+  document.getElementById('inColorName').value = '';
+  document.getElementById('inCode').focus();
   renderPairList();
 }
 
 function bulkAddPairs() {
-  const lines = document.getElementById('bulkTrim').value.split('\n').map(l => l.trim()).filter(Boolean);
+  const lines = document.getElementById('bulkColors').value.split('\n').map(l => l.trim()).filter(Boolean);
   lines.forEach(line => {
     const idx = line.search(/\s/);
     if (idx === -1) return;
-    const trim = line.slice(0, idx).toUpperCase();
-    const text = line.slice(idx).trim();
-    if (trim && text && !state.pairs.find(p => p.trim === trim && p.text === text))
-      state.pairs.push({ trim, text });
+    const code = line.slice(0, idx).toUpperCase();
+    const name = line.slice(idx).trim();
+    if (code && name && !state.pairs.find(p => p.code === code && p.name === name))
+      state.pairs.push({ code, name });
   });
-  document.getElementById('bulkTrim').value = '';
+  document.getElementById('bulkColors').value = '';
   renderPairList();
 }
 
@@ -390,17 +387,26 @@ function removePair(i) { state.pairs.splice(i, 1); renderPairList(); }
 // ── Generate ───────────────────────────────────────────────────────────────
 function generate() {
   const brandVal = document.getElementById('inBrand').value;
-  const { years, mmcs, pairs } = state;
-  if (!brandVal || !years.length || !mmcs.length || !pairs.length) {
-    alert('Selecciona una marca y completa Year, MMC y al menos un par de Trim.');
+  const { years, nameplates, pairs } = state;
+  if (!brandVal || !years.length || !nameplates.length || !pairs.length) {
+    alert('Selecciona una marca y completa Year, Nameplate y al menos un par de Color.');
     return;
   }
+
   const combos = [];
-  for (const y of years) for (const m of mmcs) for (const p of pairs) {
-    const obj = { BRAND: brandVal, MODEL_YR: isNaN(parseInt(y)) ? y : parseInt(y), MMC: m, TRIM: p.trim, TRIM_TEXT: p.text };
-    obj._isDup = existingKeys.size > 0 && existingKeys.has(comboKey(obj));
-    combos.push(obj);
-  }
+  for (const y of years)
+    for (const np of nameplates)
+      for (const p of pairs) {
+        const obj = {
+          BRAND: brandVal,
+          MODEL_YR: y,
+          VEH_NAME_PLATE: np,
+          DERIVED_FIELDS1: p.code,
+          EXTERIOR_TEXT: p.name,
+        };
+        obj._isDup = existingKeys.size > 0 && existingKeys.has(comboKey(obj));
+        combos.push(obj);
+      }
 
   generated = combos;
   currentView = 'all';
@@ -409,26 +415,23 @@ function generate() {
   const newCount = combos.filter(c => !c._isDup).length;
   const dupCount = combos.filter(c => c._isDup).length;
 
-  // Stats chips
   const chips = [
     `<span class="chip accent"><b>${combos.length}</b> combinations</span>`,
     `<span class="chip"><b>${brandVal}</b></span>`,
     `<span class="chip"><b>${years.length}</b> year${years.length!==1?'s':''}</span>`,
-    `<span class="chip"><b>${mmcs.length}</b> MMC${mmcs.length!==1?'s':''}</span>`,
-    `<span class="chip"><b>${pairs.length}</b> trim pair${pairs.length!==1?'s':''}</span>`,
+    `<span class="chip"><b>${nameplates.length}</b> nameplate${nameplates.length!==1?'s':''}</span>`,
+    `<span class="chip"><b>${pairs.length}</b> color${pairs.length!==1?'s':''}</span>`,
   ];
   if (existingKeys.size > 0) {
     chips.push(`<span class="chip success"><b>${newCount}</b> new</span>`);
     chips.push(`<span class="chip warning"><b>${dupCount}</b> duplicate${dupCount!==1?'s':''}</span>`);
   }
   document.getElementById('statsChips').innerHTML = chips.join('');
-
-  // Show/hide diff toggles
   document.getElementById('diffToggles').style.display = existingKeys.size > 0 ? 'flex' : 'none';
   setView('all');
 }
 
-// ── View toggle ────────────────────────────────────────────────────────────
+// ── View / render ──────────────────────────────────────────────────────────
 function setView(v) {
   currentView = v;
   ['all','new','dup'].forEach(id => {
@@ -447,19 +450,13 @@ function renderOutput() {
     return true;
   });
 
-  // Strip internal _isDup before displaying
-  const clean = items.map(({ _isDup, ...rest }) => rest);
-
   if (hasDiff) {
-    // Build line-by-line highlighted JSON with diff coloring per entry
-    const lines = [];
-    lines.push('[');
+    const lines = ['['];
     items.forEach((combo, idx) => {
       const { _isDup, ...rest } = combo;
-      const entryLines = JSON.stringify(rest, null, 2).split('\n');
       const cls = _isDup ? 'json-dup' : 'json-new';
+      const entryLines = JSON.stringify(rest, null, 2).split('\n');
       entryLines.forEach((line, li) => {
-        // Add comma on closing brace if not last item
         let out = line;
         if (li === entryLines.length - 1 && idx < items.length - 1) out += ',';
         lines.push(`<span class="${cls}">${highlightLine(out)}</span>`);
@@ -468,8 +465,8 @@ function renderOutput() {
     lines.push(']');
     document.getElementById('outputBox').innerHTML = lines.join('\n');
   } else {
-    const raw = JSON.stringify(clean, null, 2);
-    document.getElementById('outputBox').innerHTML = highlightJson(raw);
+    const clean = items.map(({ _isDup, ...rest }) => rest);
+    document.getElementById('outputBox').innerHTML = highlightJson(JSON.stringify(clean, null, 2));
   }
 }
 
@@ -479,7 +476,6 @@ function highlightLine(line) {
     .replace(/:\s*("(?:[^"\\]|\\.)*")/g, ': <span class="json-str">$1</span>')
     .replace(/:\s*(\d+)/g, ': <span class="json-num">$1</span>');
 }
-
 function highlightJson(raw) {
   return raw
     .replace(/("[\w_]+")\s*:/g, '<span class="json-key">$1</span>:')
@@ -488,14 +484,17 @@ function highlightJson(raw) {
 }
 
 // ── Copy / Download ────────────────────────────────────────────────────────
-function copyOutput() {
-  if (!generated) { alert('Generate first.'); return; }
-  const items = generated.filter(c => {
+function getFilteredClean() {
+  return generated.filter(c => {
     if (currentView === 'new') return !c._isDup;
     if (currentView === 'dup') return c._isDup;
     return true;
   }).map(({ _isDup, ...rest }) => rest);
-  navigator.clipboard.writeText(JSON.stringify(items, null, 2)).then(() => {
+}
+
+function copyOutput() {
+  if (!generated) { alert('Generate first.'); return; }
+  navigator.clipboard.writeText(JSON.stringify(getFilteredClean(), null, 2)).then(() => {
     const btn = document.getElementById('copyBtn');
     btn.textContent = '✓ Copied';
     setTimeout(() => btn.textContent = '⎘ Copy', 2000);
@@ -504,12 +503,7 @@ function copyOutput() {
 
 function copyOutputFlat() {
   if (!generated) { alert('Generate first.'); return; }
-  const items = generated.filter(c => {
-    if (currentView === 'new') return !c._isDup;
-    if (currentView === 'dup') return c._isDup;
-    return true;
-  }).map(({ _isDup, ...rest }) => rest);
-  const text = items.map(o => JSON.stringify(o, null, 2)).join(',\n');
+  const text = getFilteredClean().map(o => JSON.stringify(o, null, 2)).join(',\n');
   navigator.clipboard.writeText(text).then(() => {
     const btn = document.getElementById('copyFlatBtn');
     btn.textContent = '✓ Copied';
@@ -519,23 +513,19 @@ function copyOutputFlat() {
 
 function downloadOutput() {
   if (!generated) { alert('Generate first.'); return; }
-  const items = generated.filter(c => {
-    if (currentView === 'new') return !c._isDup;
-    if (currentView === 'dup') return c._isDup;
-    return true;
-  }).map(({ _isDup, ...rest }) => rest);
+  const items = getFilteredClean();
   const suffix = currentView === 'new' ? '-new' : currentView === 'dup' ? '-duplicates' : '';
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(items, null, 2)], { type: 'application/json' }));
-  a.download = `vehicle-combinations${suffix}.json`;
+  a.download = `exteriors${suffix}.json`;
   a.click();
 }
 
 function resetAll() {
-  state.years = []; state.mmcs = []; state.pairs = [];
+  state.years = []; state.nameplates = []; state.pairs = [];
   document.getElementById('inBrand').value = '';
-  ['inYear','inMmc','inTrim','inTrimText','bulkTrim'].forEach(id => document.getElementById(id).value = '');
-  ['years','mmcs'].forEach(k => renderList(k));
+  ['inYear','inNameplate','inCode','inColorName','bulkColors'].forEach(id => document.getElementById(id).value = '');
+  ['years','nameplates'].forEach(k => renderList(k));
   renderPairList();
   generated = null;
   currentView = 'all';
@@ -546,10 +536,10 @@ function resetAll() {
 }
 
 // ── Enter shortcuts ────────────────────────────────────────────────────────
-document.getElementById('inYear').addEventListener('keydown', e => { if(e.key==='Enter') bulkAddSimple('years','inYear','yearList'); });
-document.getElementById('inMmc').addEventListener('keydown', e => { if(e.key==='Enter') bulkAddSimple('mmcs','inMmc','mmcList'); });
-document.getElementById('inTrim').addEventListener('keydown', e => { if(e.key==='Enter') { document.getElementById('inTrimText').focus(); } });
-document.getElementById('inTrimText').addEventListener('keydown', e => { if(e.key==='Enter') addPair(); });
+document.getElementById('inYear').addEventListener('keydown',      e => { if(e.key==='Enter') bulkAddSimple('years','inYear','yearList'); });
+document.getElementById('inNameplate').addEventListener('keydown', e => { if(e.key==='Enter') bulkAddSimple('nameplates','inNameplate','nameplateList'); });
+document.getElementById('inCode').addEventListener('keydown',      e => { if(e.key==='Enter') document.getElementById('inColorName').focus(); });
+document.getElementById('inColorName').addEventListener('keydown', e => { if(e.key==='Enter') addPair(); });
 </script>
 </body>
 </html>
