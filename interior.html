@@ -11,7 +11,7 @@
     --border: #262626; --border2: #333;
     --accent: #c084fc; --accent2: #00c8ff;
     --text: #e8e8e0; --muted: #555; --muted2: #888;
-    --danger: #ff4455; --success: #00e676;
+    --danger: #ff4455; --success: #00e676; --warning: #ffbb00;
     --mono: 'IBM Plex Mono', monospace; --sans: 'IBM Plex Sans', sans-serif;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -85,7 +85,22 @@
   .stats-chips { display: flex; gap: 8px; flex-wrap: wrap; }
   .chip { font-family: var(--mono); font-size: 11px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 3px; padding: 3px 10px; color: var(--muted2); }
   .chip b { color: var(--text); font-weight: 600; }
-  .chip.accent { border-color: rgba(200,255,0,0.3); color: var(--accent); background: rgba(200,255,0,0.05); }
+  .chip.accent  { border-color: rgba(192,132,252,0.35); color: var(--accent); background: rgba(192,132,252,0.06); }
+  .chip.success { border-color: rgba(0,230,118,0.35);  color: var(--success); background: rgba(0,230,118,0.06); }
+  .chip.warning { border-color: rgba(255,187,0,0.35);  color: var(--warning); background: rgba(255,187,0,0.06); }
+
+  .json-new { background: rgba(0,230,118,0.07); display: block; border-left: 2px solid var(--success); padding-left: 4px; }
+  .json-dup { background: rgba(255,187,0,0.07); display: block; border-left: 2px solid var(--warning); padding-left: 4px; }
+
+  .diff-toggle-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .diff-toggle {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.07em;
+    padding: 4px 12px; border-radius: 3px; border: 1px solid var(--border2);
+    cursor: pointer; background: transparent; color: var(--muted2); transition: all 0.13s;
+  }
+  .diff-toggle.active     { background: var(--surface2); color: var(--text); border-color: var(--accent); }
+  .diff-toggle.new-active { background: rgba(0,230,118,0.08); color: var(--success); border-color: var(--success); }
+  .diff-toggle.dup-active { background: rgba(255,187,0,0.08); color: var(--warning); border-color: var(--warning); }
 
   pre {
     background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
@@ -110,11 +125,11 @@
 <div style="border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:16px;background:var(--bg);position:sticky;top:0;z-index:300">
   <a href="index.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;display:flex;align-items:center;gap:6px">← Campaign Converter</a>
   <div style="flex:1"></div>
+  <a href="models.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Models</a>
   <a href="checker.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Checker</a>
   <a href="generator.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Generator</a>
   <a href="trim-collection.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Trim Collection</a>
   <a href="exteriors.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Exteriors</a>
-  <a href="models.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Models</a>
   <a href="interior.html" style="font-family:var(--mono);font-size:11px;color:var(--accent);text-decoration:none;padding:4px 10px;border-radius:3px">Interior</a>
 </div>
 
@@ -196,6 +211,20 @@
       <div class="tag-list" id="pairList"></div>
     </div>
 
+    <!-- EXISTING DATA (DIFF) -->
+    <div>
+      <div class="section-title">Existing Data <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0.05em">(optional — for diff)</span></div>
+      <div class="hint">Paste existing JSON array to highlight duplicates</div>
+      <textarea id="existingJson" rows="4" placeholder='[{"BRAND":"GMC","MODEL_YR":"2025","VEH_NAME_PLATE":"Sierra 1500","INTERIOR_CODE":"H2G","INTERIOR_TEXT":"Jet Black Vinyl"}, ...]' style="font-size:11px"></textarea>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:5px">
+        <span id="existingStatus" style="font-family:var(--mono);font-size:10px;color:var(--muted)">— no data loaded —</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" onclick="loadExisting()">Load</button>
+          <button class="btn btn-sm" onclick="clearExisting()">Clear</button>
+        </div>
+      </div>
+    </div>
+
     <!-- GENERATE -->
     <div>
       <div class="run-row">
@@ -216,6 +245,11 @@
         <button class="btn btn-sm btn-accent" onclick="downloadOutput()">↓ Download</button>
       </div>
     </div>
+    <div class="diff-toggle-row" id="diffToggles" style="display:none;margin-bottom:10px">
+      <button class="diff-toggle active" id="tog-all" onclick="setView('all')">All</button>
+      <button class="diff-toggle" id="tog-new" onclick="setView('new')">🟢 New only</button>
+      <button class="diff-toggle" id="tog-dup" onclick="setView('dup')">🟡 Duplicates only</button>
+    </div>
     <pre id="outputBox"><span style="color:var(--muted)">// Configure the fields and press Generate</span></pre>
   </div>
 
@@ -224,15 +258,52 @@
 <script>
 const state = { years: [], plates: [], pairs: [] };
 let generated = null;
+let existingKeys = new Set();
+let currentView = 'all';
 
 const cfg = {
-  years:  { inputId: 'inYear',  listId: 'yearList',  countId: 'yearsCount',  label: 'year'  },
+  years: { inputId: 'inYear', listId: 'yearList', countId: 'yearsCount', label: 'year' },
 };
 
+// ── Diff key (all 5 fields must match) ────────────────────────────────────
+function comboKey(obj) {
+  return [
+    (obj.BRAND||'').toUpperCase(),
+    String(obj.MODEL_YR),
+    (obj.VEH_NAME_PLATE||'').toUpperCase(),
+    (obj.INTERIOR_CODE||'').toUpperCase(),
+    (obj.INTERIOR_TEXT||'').toUpperCase(),
+  ].join('|');
+}
+
+// ── Existing data ──────────────────────────────────────────────────────────
+function loadExisting() {
+  const raw = document.getElementById('existingJson').value.trim();
+  if (!raw) return;
+  try {
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) throw new Error();
+    existingKeys = new Set(arr.map(comboKey));
+    document.getElementById('existingStatus').textContent = `✓ ${existingKeys.size} existing entries loaded`;
+    document.getElementById('existingStatus').style.color = 'var(--success)';
+  } catch {
+    document.getElementById('existingStatus').textContent = '✗ Invalid JSON — check format';
+    document.getElementById('existingStatus').style.color = 'var(--danger)';
+  }
+}
+
+function clearExisting() {
+  existingKeys = new Set();
+  document.getElementById('existingJson').value = '';
+  document.getElementById('existingStatus').textContent = '— no data loaded —';
+  document.getElementById('existingStatus').style.color = 'var(--muted)';
+  if (generated) renderOutput();
+}
+
+// ── List rendering ─────────────────────────────────────────────────────────
 function parseTokens(str) {
   return str.split(/[,\s\n]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
 }
-
 function parsePlates(str) {
   return str.split(',').map(s => s.trim()).filter(Boolean);
 }
@@ -251,7 +322,7 @@ function bulkAddPlate() {
   renderPlateList();
 }
 
-function clearField(key, listId) {
+function clearField(key) {
   state[key] = [];
   if (key === 'plates') renderPlateList();
   else if (key === 'pairs') renderPairList();
@@ -267,8 +338,7 @@ function removeItem(key, i) {
 
 function renderList(key) {
   const c = cfg[key];
-  const el = document.getElementById(c.listId);
-  el.innerHTML = state[key].map((v, i) =>
+  document.getElementById(c.listId).innerHTML = state[key].map((v, i) =>
     `<span class="tag">${v}<span class="del" onclick="removeItem('${key}',${i})">×</span></span>`
   ).join('');
   const n = state[key].length;
@@ -276,8 +346,7 @@ function renderList(key) {
 }
 
 function renderPlateList() {
-  const el = document.getElementById('plateList');
-  el.innerHTML = state.plates.map((v, i) =>
+  document.getElementById('plateList').innerHTML = state.plates.map((v, i) =>
     `<span class="tag">${v}<span class="del" onclick="removeItem('plates',${i})">×</span></span>`
   ).join('');
   const n = state.plates.length;
@@ -285,8 +354,7 @@ function renderPlateList() {
 }
 
 function renderPairList() {
-  const el = document.getElementById('pairList');
-  el.innerHTML = state.pairs.map((p, i) =>
+  document.getElementById('pairList').innerHTML = state.pairs.map((p, i) =>
     `<span class="tag pair">${p.code} → ${p.text}<span class="del" onclick="removeItem('pairs',${i})">×</span></span>`
   ).join('');
   const n = state.pairs.length;
@@ -318,6 +386,7 @@ function bulkAddPairs() {
   renderPairList();
 }
 
+// ── Generate ───────────────────────────────────────────────────────────────
 function generate() {
   const brandVal = document.getElementById('inBrand').value;
   const { years, plates, pairs } = state;
@@ -325,48 +394,92 @@ function generate() {
     alert('Selecciona una marca y completa Year, Nameplate y al menos un par de interior.');
     return;
   }
-  const brands = [brandVal];
+
   const combos = [];
-  for (const b of brands)
-    for (const y of years)
-      for (const pl of plates)
-        for (const p of pairs)
-          combos.push({
-            BRAND: b,
-            MODEL_YR: y,
-            VEH_NAME_PLATE: pl,
-            INTERIOR_CODE: p.code,
-            INTERIOR_TEXT: p.text
-          });
+  for (const y of years)
+    for (const pl of plates)
+      for (const p of pairs) {
+        const obj = { BRAND: brandVal, MODEL_YR: y, VEH_NAME_PLATE: pl, INTERIOR_CODE: p.code, INTERIOR_TEXT: p.text };
+        obj._isDup = existingKeys.size > 0 && existingKeys.has(comboKey(obj));
+        combos.push(obj);
+      }
 
   generated = combos;
+  currentView = 'all';
   document.getElementById('totalCount').textContent = combos.length;
 
-  document.getElementById('statsChips').innerHTML = [
+  const newCount = combos.filter(c => !c._isDup).length;
+  const dupCount = combos.filter(c =>  c._isDup).length;
+
+  const chips = [
     `<span class="chip accent"><b>${combos.length}</b> combinations</span>`,
     `<span class="chip"><b>${brandVal}</b></span>`,
     `<span class="chip"><b>${years.length}</b> year${years.length!==1?'s':''}</span>`,
     `<span class="chip"><b>${plates.length}</b> nameplate${plates.length!==1?'s':''}</span>`,
     `<span class="chip"><b>${pairs.length}</b> interior${pairs.length!==1?'s':''}</span>`,
-  ].join('');
-
-  const raw = JSON.stringify(combos, null, 2);
-  const highlighted = raw
-    .replace(/("[\w_]+")\s*:/g, '<span class="json-key">$1</span>:')
-    .replace(/:\s*("(?:[^"\\]|\\.)*")/g, ': <span class="json-str">$1</span>');
-  document.getElementById('outputBox').innerHTML = highlighted;
+  ];
+  if (existingKeys.size > 0) {
+    chips.push(`<span class="chip success"><b>${newCount}</b> new</span>`);
+    chips.push(`<span class="chip warning"><b>${dupCount}</b> duplicate${dupCount!==1?'s':''}</span>`);
+  }
+  document.getElementById('statsChips').innerHTML = chips.join('');
+  document.getElementById('diffToggles').style.display = existingKeys.size > 0 ? 'flex' : 'none';
+  setView('all');
 }
 
-function clearOutput() {
-  document.getElementById('outputBox').innerHTML = '<span style="color:var(--muted)">// Configure the fields and press Generate</span>';
-  generated = null;
-  document.getElementById('statsChips').innerHTML = '';
-  document.getElementById('totalCount').textContent = '0';
+// ── View / render ──────────────────────────────────────────────────────────
+function setView(v) {
+  currentView = v;
+  ['all','new','dup'].forEach(id => {
+    document.getElementById(`tog-${id}`).className =
+      'diff-toggle' + (id === v ? (id==='new' ? ' new-active' : id==='dup' ? ' dup-active' : ' active') : '');
+  });
+  renderOutput();
+}
+
+function renderOutput() {
+  if (!generated) return;
+  const hasDiff = existingKeys.size > 0;
+  const items = generated.filter(c =>
+    currentView === 'new' ? !c._isDup : currentView === 'dup' ? c._isDup : true
+  );
+
+  if (hasDiff) {
+    const lines = ['['];
+    items.forEach((combo, idx) => {
+      const { _isDup, ...rest } = combo;
+      const cls = _isDup ? 'json-dup' : 'json-new';
+      JSON.stringify(rest, null, 2).split('\n').forEach((line, li, arr) => {
+        let out = line;
+        if (li === arr.length - 1 && idx < items.length - 1) out += ',';
+        lines.push(`<span class="${cls}">${hl(out)}</span>`);
+      });
+    });
+    lines.push(']');
+    document.getElementById('outputBox').innerHTML = lines.join('\n');
+  } else {
+    document.getElementById('outputBox').innerHTML =
+      hl(JSON.stringify(items.map(({ _isDup, ...r }) => r), null, 2));
+  }
+}
+
+function hl(raw) {
+  return raw
+    .replace(/("[\w_]+")\s*:/g, '<span class="json-key">$1</span>:')
+    .replace(/:\s*("(?:[^"\\]|\\.)*")/g, ': <span class="json-str">$1</span>');
+}
+
+// ── Copy / Download ────────────────────────────────────────────────────────
+function getFiltered() {
+  if (!generated) return [];
+  return generated.filter(c =>
+    currentView === 'new' ? !c._isDup : currentView === 'dup' ? c._isDup : true
+  ).map(({ _isDup, ...r }) => r);
 }
 
 function copyOutput() {
   if (!generated) { alert('Generate first.'); return; }
-  navigator.clipboard.writeText(JSON.stringify(generated, null, 2)).then(() => {
+  navigator.clipboard.writeText(JSON.stringify(getFiltered(), null, 2)).then(() => {
     const btn = document.getElementById('copyBtn');
     btn.textContent = '✓ Copied';
     setTimeout(() => btn.textContent = '⎘ Copy', 2000);
@@ -375,8 +488,7 @@ function copyOutput() {
 
 function copyNobrackets() {
   if (!generated) { alert('Generate first.'); return; }
-  const text = generated.map(obj => JSON.stringify(obj, null, 2)).join(',\n');
-  navigator.clipboard.writeText(text).then(() => {
+  navigator.clipboard.writeText(getFiltered().map(o => JSON.stringify(o, null, 2)).join(',\n')).then(() => {
     const btn = document.getElementById('copyNbBtn');
     btn.textContent = '✓ Copied';
     setTimeout(() => btn.textContent = '⎘ Copy without [ ]', 2000);
@@ -385,9 +497,10 @@ function copyNobrackets() {
 
 function downloadOutput() {
   if (!generated) { alert('Generate first.'); return; }
+  const suffix = currentView === 'new' ? '-new' : currentView === 'dup' ? '-duplicates' : '';
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([JSON.stringify(generated, null, 2)], { type: 'application/json' }));
-  a.download = 'interior-combinations.json';
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(getFiltered(), null, 2)], { type: 'application/json' }));
+  a.download = `interior-combinations${suffix}.json`;
   a.click();
 }
 
@@ -395,18 +508,18 @@ function resetAll() {
   state.years = []; state.plates = []; state.pairs = [];
   document.getElementById('inBrand').value = '';
   ['inYear','inPlate','inCode','inText','bulkInterior'].forEach(id => document.getElementById(id).value = '');
-  ['years'].forEach(k => renderList(k));
-  renderPlateList(); renderPairList();
-  generated = null;
+  renderList('years'); renderPlateList(); renderPairList();
+  generated = null; currentView = 'all';
   document.getElementById('totalCount').textContent = '0';
   document.getElementById('statsChips').innerHTML = '';
+  document.getElementById('diffToggles').style.display = 'none';
   document.getElementById('outputBox').innerHTML = '<span style="color:var(--muted)">// Configure the fields and press Generate</span>';
 }
 
-document.getElementById('inYear').addEventListener('keydown', e => { if(e.key==='Enter') bulkAddSimple('years','inYear','yearList'); });
+document.getElementById('inYear').addEventListener('keydown',  e => { if(e.key==='Enter') bulkAddSimple('years','inYear','yearList'); });
 document.getElementById('inPlate').addEventListener('keydown', e => { if(e.key==='Enter') bulkAddPlate(); });
-document.getElementById('inCode').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('inText').focus(); });
-document.getElementById('inText').addEventListener('keydown', e => { if(e.key==='Enter') addPair(); });
+document.getElementById('inCode').addEventListener('keydown',  e => { if(e.key==='Enter') document.getElementById('inText').focus(); });
+document.getElementById('inText').addEventListener('keydown',  e => { if(e.key==='Enter') addPair(); });
 </script>
 </body>
 </html>
