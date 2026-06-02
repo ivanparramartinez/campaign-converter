@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GM Interior Builder</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="globals.js"></script>
 <style>
   :root {
     --bg: #0a0a0a; --surface: #141414; --surface2: #1c1c1c;
@@ -520,6 +521,15 @@ document.getElementById('inYear').addEventListener('keydown',  e => { if(e.key==
 document.getElementById('inPlate').addEventListener('keydown', e => { if(e.key==='Enter') bulkAddPlate(); });
 document.getElementById('inCode').addEventListener('keydown',  e => { if(e.key==='Enter') document.getElementById('inText').focus(); });
 document.getElementById('inText').addEventListener('keydown',  e => { if(e.key==='Enter') addPair(); });
+
+// ── Globals ────────────────────────────────────────────────────────────────
+document.getElementById('inBrand').addEventListener('change', e => saveGlobals({ brand: e.target.value }));
+const _intRenderList = renderList;
+renderList = function(key) { _intRenderList(key); if (key === 'years') saveGlobals({ years: state.years }); };
+initGlobals({
+  onBrand: () => {},
+  onYears: (years) => { state.years = [...years]; _intRenderList('years'); },
+});
 </script>
 </body>
 </html>

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GM Trim Collection Creator</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="globals.js"></script>
 <style>
   :root {
     --bg: #0a0a0a; --surface: #141414; --surface2: #1c1c1c;
@@ -551,6 +552,15 @@ document.getElementById('inYear').addEventListener('keydown', e => { if(e.key===
 document.getElementById('inMmc').addEventListener('keydown', e => { if(e.key==='Enter') bulkAddSimple('mmcs','inMmc','mmcList'); });
 document.getElementById('inTrim').addEventListener('keydown', e => { if(e.key==='Enter') { document.getElementById('inTrimText').focus(); } });
 document.getElementById('inTrimText').addEventListener('keydown', e => { if(e.key==='Enter') addPair(); });
+
+// ── Globals ────────────────────────────────────────────────────────────────
+document.getElementById('inBrand').addEventListener('change', e => saveGlobals({ brand: e.target.value }));
+const _tcRenderList = renderList;
+renderList = function(key) { _tcRenderList(key); if (key === 'years') saveGlobals({ years: state.years }); };
+initGlobals({
+  onBrand: () => {},
+  onYears: (years) => { state.years = [...years]; _tcRenderList('years'); },
+});
 </script>
 </body>
 </html>

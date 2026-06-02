@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GM Model Collection Creator</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="globals.js"></script>
 <style>
   :root {
     --bg: #0a0a0a; --surface: #141414; --surface2: #1c1c1c;
@@ -494,6 +495,15 @@ function resetAll() {
 document.getElementById('inYear').addEventListener('keydown',      e => { if(e.key==='Enter') bulkAddSimple('years','inYear','yearList'); });
 document.getElementById('inMmc').addEventListener('keydown',       e => { if(e.key==='Enter') document.getElementById('inModelName').focus(); });
 document.getElementById('inModelName').addEventListener('keydown', e => { if(e.key==='Enter') addPair(); });
+
+// ── Globals ────────────────────────────────────────────────────────────────
+document.getElementById('inBrand').addEventListener('change', e => saveGlobals({ brand: e.target.value }));
+const _modRenderList = renderList;
+renderList = function(key) { _modRenderList(key); if (key === 'years') saveGlobals({ years: state.years }); };
+initGlobals({
+  onBrand: () => {},
+  onYears: (years) => { state.years = [...years]; _modRenderList('years'); },
+});
 </script>
 </body>
 </html>
