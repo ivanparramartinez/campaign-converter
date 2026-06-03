@@ -162,7 +162,7 @@
         <span class="ds-chevron">▼</span>
       </div>
       <div class="ds-body">
-        <textarea id="ta-interior" rows="5" placeholder="var INTERIOR = [{&quot;BRAND&quot;:&quot;GMC&quot;,&quot;MODEL_YR&quot;:&quot;2025&quot;,...}]&#10;&#10;o directamente el array JSON: [{...},{...}]"></textarea>
+        <textarea id="ta-interior" rows="5" placeholder="var INTERIOR = [{&quot;BRAND&quot;:&quot;GMC&quot;,&quot;MODEL_YR&quot;:&quot;2025&quot;,...}]&#10;&#10;or paste the JSON array directly: [{...},{...}]"></textarea>
         <div class="ds-actions">
           <button class="btn btn-accent" onclick="loadData('interior')">Load</button>
           <button class="btn btn-danger" onclick="clearData('interior')">Clear data</button>
@@ -251,19 +251,19 @@
         <div class="filter-row four">
           <div>
             <label>Brand</label>
-            <select id="f-brand" onchange="onBrandChange()"><option value="">— Todas —</option></select>
+            <select id="f-brand" onchange="onBrandChange()"><option value="">— All —</option></select>
           </div>
           <div>
             <label>Model Year</label>
-            <select id="f-year" onchange="onYearChange()"><option value="">— Todos —</option></select>
+            <select id="f-year" onchange="onYearChange()"><option value="">— All —</option></select>
           </div>
           <div>
             <label>Nameplate</label>
-            <select id="f-plate" onchange="renderBrowser()"><option value="">— Todos —</option></select>
+            <select id="f-plate" onchange="renderBrowser()"><option value="">— All —</option></select>
           </div>
           <div>
             <label>MMC</label>
-            <select id="f-mmc" onchange="renderBrowser()"><option value="">— Todos —</option></select>
+            <select id="f-mmc" onchange="renderBrowser()"><option value="">— All —</option></select>
           </div>
         </div>
 
@@ -370,7 +370,7 @@ function loadData(type) {
     updateFilterOptions();
     renderBrowser();
   } catch(e) {
-    alert(`Error parseando ${type}: ${e.message}`);
+    alert(`Parse error in ${type}: ${e.message}`);
   }
 }
 
@@ -431,7 +431,7 @@ function updateFilterOptions() {
 function setOptions(id, values, addAll = false) {
   const sel = document.getElementById(id);
   const prev = sel.value;
-  sel.innerHTML = (addAll ? '<option value="">— Todas —</option>' : '<option value="">— Todos —</option>') +
+  sel.innerHTML = (addAll ? '<option value="">— All —</option>' : '<option value="">— All —</option>') +
     values.map(v => `<option value="${v}">${v}</option>`).join('');
   if (values.includes(prev)) sel.value = prev;
 }
@@ -518,7 +518,7 @@ function renderBrowser() {
     );
   }
 
-  container.innerHTML = html || '<div class="empty-msg">No hay records con los filtros actuales.</div>';
+  container.innerHTML = html || '<div class="empty-msg">No records match the current filters.</div>';
 }
 
 function renderTable(title, headers, rows, rowFn) {
@@ -670,7 +670,7 @@ let _mergeMode = 'update'; // 'update' | 'keep'
 
 function setMergeMode(mode) {
   _mergeMode = mode;
-  const activeStyle  = 'background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.5);color:var(--accent)';
+  const activeStyle   = 'background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.5);color:var(--accent)';
   const inactiveStyle = 'background:transparent;border:1px solid var(--border2);color:var(--muted2)';
   const upd  = document.getElementById('merge-opt-update');
   const keep = document.getElementById('merge-opt-keep');
@@ -686,44 +686,52 @@ function runMerge() {
   const type    = document.getElementById('compare-type').value;
   if (!results.length || !s) return;
 
-  // Read mode directly from the radio button (source of truth)
   const modeEl = document.querySelector('input[name="merge-mode"]:checked');
   const mode   = modeEl ? modeEl.value : _mergeMode;
 
-  // Use a Map (insertion-order preserved) — existing records first
-  const mergedMap = new Map();
-  store[type].forEach(r => mergedMap.set(makeKey(r, s.keyFields), r));
+  // ── FIX: preserve the full original array — no Map deduplication.
+  // Starting from the store directly guarantees the original record count is kept intact.
+  // We only mutate records in-place (conflicts with 'update') or append (new records).
 
-  // Apply new data on top
+  // Build a lookup from key → array index in the original (first occurrence wins for conflicts)
+  const existingIndexMap = new Map();
+  store[type].forEach((r, i) => {
+    const key = makeKey(r, s.keyFields);
+    if (!existingIndexMap.has(key)) existingIndexMap.set(key, i);
+  });
+
+  // Clone the original array preserving every record
+  const merged = store[type].map(r => ({ ...r }));
+
+  // Apply new data
   results.forEach(r => {
     const key = makeKey(r.record, s.keyFields);
     if (r.status === 'new') {
-      mergedMap.set(key, r.record);          // add new record
+      merged.push(r.record);                         // append genuinely new records
     } else if (r.status === 'conflict' && mode === 'update') {
-      mergedMap.set(key, r.record);          // replace with new value
+      const idx = existingIndexMap.get(key);
+      if (idx !== undefined) merged[idx] = r.record; // replace in-place, keeps count stable
     }
-    // 'match' and 'conflict' with 'keep': leave existing unchanged
+    // 'match' → untouched; 'conflict' + 'keep' → untouched
   });
 
-  const merged = [...mergedMap.values()];
   _mergedArray = merged;
 
   const newAdded      = results.filter(r => r.status === 'new').length;
   const conflictCount = results.filter(r => r.status === 'conflict').length;
   const replaced      = mode === 'update' ? conflictCount : 0;
   const kept          = mode === 'keep'   ? conflictCount : 0;
-  const unchanged     = store[type].length - (mode === 'update' ? conflictCount : 0);
 
   const statPills = [
     `<span class="stat-pill"><b>${merged.length}</b> total in merge</span>`,
-    `<span class="stat-pill" style="color:var(--muted2)"><b>${unchanged}</b> unchanged</span>`,
+    `<span class="stat-pill" style="color:var(--muted2)"><b>${store[type].length}</b> original</span>`,
   ];
+  if (newAdded > 0)
+    statPills.push(`<span class="stat-pill new"><b>+${newAdded}</b> added</span>`);
   if (mode === 'update' && replaced > 0)
-    statPills.push(`<span class="stat-pill conflict"><b>${replaced}</b> replaced with new</span>`);
+    statPills.push(`<span class="stat-pill conflict"><b>${replaced}</b> updated</span>`);
   if (mode === 'keep' && kept > 0)
     statPills.push(`<span class="stat-pill" style="color:var(--muted2)"><b>${kept}</b> conflicts kept as-is</span>`);
-  if (newAdded > 0)
-    statPills.push(`<span class="stat-pill new"><b>${newAdded}</b> added</span>`);
   document.getElementById('merge-stats').innerHTML = statPills.join('');
 
   const out = document.getElementById('merge-output');
@@ -769,11 +777,11 @@ function renderCompareTable(view) {
     let statusBadge, detailHtml = '';
 
     if (r.status === 'new') {
-      statusBadge = '<span class="status-badge status-new">🟢 NUEVO</span>';
+      statusBadge = '<span class="status-badge status-new">🟢 NEW</span>';
     } else if (r.status === 'match') {
-      statusBadge = '<span class="status-badge status-match">✓ IGUAL</span>';
+      statusBadge = '<span class="status-badge status-match">✓ MATCH</span>';
     } else {
-      statusBadge = '<span class="status-badge status-conflict">⚠️ CONFLICTO</span>';
+      statusBadge = '<span class="status-badge status-conflict">⚠️ CONFLICT</span>';
       detailHtml = r.diffs.map(f => `
         <div style="margin-top:4px;font-size:11px">
           <span style="color:var(--muted2);font-family:var(--mono)">${f}:</span>
@@ -810,7 +818,7 @@ function renderCompareTable(view) {
   wrap.innerHTML = `
     <table class="data-table">
       <thead><tr>
-        <th>Estado</th>
+        <th>Status</th>
         <th>${s.codeField}</th>
         <th>${s.textField}</th>
         ${extraHeaders}
