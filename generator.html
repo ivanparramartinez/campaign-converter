@@ -615,37 +615,46 @@ function generate() {
   const brandAbbr = { CHEVROLET: 'CH', GMC: 'GM', BUICK: 'BU', CADILLAC: 'CA' };
   const abbr = brandAbbr[base.marketingMake] || base.marketingMake;
 
+  // Group combos by effective model name, preserving insertion order
+  const modelGroups = new Map();
+  for (const combo of validCombos) {
+    const modelName = mmcModelMap[combo.model] || base.marketingModel;
+    if (!modelGroups.has(modelName)) modelGroups.set(modelName, []);
+    modelGroups.get(modelName).push(combo);
+  }
+
+  // Generate all event codes per model group, in order
   const records = [];
   let msgIdx = 0;
-  for (const ec of eventCodes) {
-    // Code 38 always gets two records: loyaltyMemberFlag N and Y
-    const loyaltyVariants = ec === '38' ? ['N', 'Y'] : [base.loyaltyMemberFlag];
-    for (const loyaltyFlag of loyaltyVariants) {
-      const combo = rand(validCombos);
-      const intColor = rand(interiorColors);
-      const effectiveModel = mmcModelMap[combo.model] || base.marketingModel;
-      const subjectLine = `${ec}_${base.modelYear}_${abbr}_${effectiveModel.replace(/\s+/g,'_')}_${combo.model}_${intColor}_${combo.ext}_${combo.trim}`;
-      records.push({
-        subjectLine,
-        message: {
-          id: String(msgIdStart + msgIdx),
-          delivery: {
-            mapping: { name: "targetData" },
-            label: delivLabel
+  for (const [modelName, groupCombos] of modelGroups) {
+    for (const ec of eventCodes) {
+      const loyaltyVariants = ec === '38' ? ['N', 'Y'] : [base.loyaltyMemberFlag];
+      for (const loyaltyFlag of loyaltyVariants) {
+        const combo    = rand(groupCombos);
+        const intColor = rand(interiorColors);
+        const subjectLine = `${ec}_${base.modelYear}_${abbr}_${modelName.replace(/\s+/g,'_')}_${combo.model}_${intColor}_${combo.ext}_${combo.trim}`;
+        records.push({
+          subjectLine,
+          message: {
+            id: String(msgIdStart + msgIdx),
+            delivery: {
+              mapping: { name: "targetData" },
+              label: delivLabel
+            }
+          },
+          targetData: {
+            ...base,
+            marketingModel: modelName,
+            loyaltyMemberFlag: loyaltyFlag,
+            eventCode: ec,
+            trim: combo.trim,
+            exteriorColor: combo.ext,
+            merchandisingModelCode: combo.model,
+            interiorColor: intColor,
           }
-        },
-        targetData: {
-          ...base,
-          marketingModel: effectiveModel,
-          loyaltyMemberFlag: loyaltyFlag,
-          eventCode: ec,
-          trim: combo.trim,
-          exteriorColor: combo.ext,
-          merchandisingModelCode: combo.model,
-          interiorColor: intColor,
-        }
-      });
-      msgIdx++;
+        });
+        msgIdx++;
+      }
     }
   }
 
