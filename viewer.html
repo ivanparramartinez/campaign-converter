@@ -603,6 +603,27 @@ function runCompare() {
     <div id="compare-table-wrap"></div>
   `;
   renderCompareTable('all');
+
+  // Merge section
+  const mergeDiv = document.createElement('div');
+  mergeDiv.id = 'merge-section';
+  mergeDiv.style.cssText = 'margin-top:20px;border-top:1px solid var(--border);padding-top:16px';
+  mergeDiv.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+      <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted2);display:flex;align-items:center;gap:7px">
+        <span style="display:inline-block;width:5px;height:5px;background:var(--accent);border-radius:50%"></span>
+        Merge — original + nuevos + conflictos resueltos
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button onclick="runMerge()" style="background:var(--accent);color:#000;border:1px solid var(--accent);font-family:var(--mono);font-size:11px;font-weight:600;padding:5px 14px;border-radius:4px;cursor:pointer;letter-spacing:0.06em">⚡ Generar merge</button>
+        <button id="copy-merge-btn" onclick="copyMerge()" style="display:none;background:transparent;border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:5px 14px;border-radius:4px;cursor:pointer;letter-spacing:0.06em">⎘ Copiar</button>
+        <button id="copy-merge-flat-btn" onclick="copyMergeFlat()" style="display:none;background:transparent;border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:5px 14px;border-radius:4px;cursor:pointer;letter-spacing:0.06em">⎘ Sin [ ]</button>
+      </div>
+    </div>
+    <div id="merge-stats" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"></div>
+    <pre id="merge-output" style="display:none;max-height:300px;font-size:11px"></pre>
+  `;
+  container.appendChild(mergeDiv);
 }
 
 let _compareCurrentView = 'all';
@@ -627,6 +648,73 @@ function copyFiltered() {
     if (!btn) return;
     btn.textContent = '✓ Copiado';
     setTimeout(() => btn.textContent = '⎘ Copiar vista', 2000);
+  });
+}
+
+// ── MERGE ──────────────────────────────────────────────────────────────────
+let _mergedArray = null;
+
+function runMerge() {
+  const results = _compareResults;
+  const s       = _compareSchema;
+  const type    = document.getElementById('compare-type').value;
+  if (!results.length || !s) return;
+
+  // Build a map of new/conflict records keyed by their key fields
+  const overrides = {};
+  results.forEach(r => {
+    if (r.status === 'new' || r.status === 'conflict') {
+      overrides[makeKey(r.record, s.keyFields)] = r.record;
+    }
+  });
+
+  // Start with original, replacing conflicts in-place
+  const merged = store[type].map(existing => {
+    const key = makeKey(existing, s.keyFields);
+    return overrides[key] ? overrides[key] : existing;
+  });
+
+  // Append new records (they weren't in original)
+  results.forEach(r => {
+    if (r.status === 'new') merged.push(r.record);
+  });
+
+  _mergedArray = merged;
+
+  const newAdded     = results.filter(r => r.status === 'new').length;
+  const replaced     = results.filter(r => r.status === 'conflict').length;
+  const unchanged    = store[type].length - replaced;
+
+  document.getElementById('merge-stats').innerHTML = [
+    `<span class="stat-pill"><b>${merged.length}</b> total en merge</span>`,
+    `<span class="stat-pill" style="color:var(--muted2)"><b>${unchanged}</b> sin cambio</span>`,
+    `<span class="stat-pill conflict"><b>${replaced}</b> reemplazados</span>`,
+    `<span class="stat-pill new"><b>${newAdded}</b> agregados</span>`,
+  ].join('');
+
+  const out = document.getElementById('merge-output');
+  out.style.display = 'block';
+  out.textContent = JSON.stringify(merged, null, 2);
+
+  document.getElementById('copy-merge-btn').style.display = '';
+  document.getElementById('copy-merge-flat-btn').style.display = '';
+}
+
+function copyMerge() {
+  if (!_mergedArray) return;
+  navigator.clipboard.writeText(JSON.stringify(_mergedArray, null, 2)).then(() => {
+    const btn = document.getElementById('copy-merge-btn');
+    btn.textContent = '✓ Copiado';
+    setTimeout(() => btn.textContent = '⎘ Copiar', 2000);
+  });
+}
+
+function copyMergeFlat() {
+  if (!_mergedArray) return;
+  navigator.clipboard.writeText(_mergedArray.map(o => JSON.stringify(o, null, 2)).join(',\n')).then(() => {
+    const btn = document.getElementById('copy-merge-flat-btn');
+    btn.textContent = '✓ Copiado';
+    setTimeout(() => btn.textContent = '⎘ Sin [ ]', 2000);
   });
 }
 
