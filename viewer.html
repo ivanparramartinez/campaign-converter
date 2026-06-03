@@ -597,6 +597,7 @@ function runCompare() {
         <button class="filter-btn"        id="fbtn-new"      onclick="setCompareView('new')">Nuevos</button>
         <button class="filter-btn"        id="fbtn-conflict" onclick="setCompareView('conflict')">Conflictos</button>
         <button class="filter-btn"        id="fbtn-match"    onclick="setCompareView('match')">Exactos</button>
+        <button id="copy-filtered-btn" onclick="copyFiltered()" style="margin-left:8px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.35);color:var(--accent);font-family:var(--mono);font-size:10px;padding:3px 10px;border-radius:3px;cursor:pointer;letter-spacing:0.06em;transition:all 0.15s" onmouseover="this.style.background='rgba(251,191,36,0.2)'" onmouseout="this.style.background='rgba(251,191,36,0.1)'">⎘ Copiar vista</button>
       </div>
     </div>
     <div id="compare-table-wrap"></div>
@@ -604,11 +605,29 @@ function runCompare() {
   renderCompareTable('all');
 }
 
+let _compareCurrentView = 'all';
+
 function setCompareView(view) {
+  _compareCurrentView = view;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   const btn = document.getElementById(`fbtn-${view}`);
   if (btn) btn.classList.add('active');
   renderCompareTable(view);
+}
+
+function copyFiltered() {
+  const results = _compareResults;
+  const view    = _compareCurrentView;
+  const filtered = (view === 'all' ? results : results.filter(r => r.status === view))
+    .map(r => r.record);
+  if (!filtered.length) return;
+  const text = filtered.map(o => JSON.stringify(o, null, 2)).join(',\n');
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-filtered-btn');
+    if (!btn) return;
+    btn.textContent = '✓ Copiado';
+    setTimeout(() => btn.textContent = '⎘ Copiar vista', 2000);
+  });
 }
 
 function renderCompareTable(view) {
