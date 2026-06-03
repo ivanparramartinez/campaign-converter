@@ -294,9 +294,10 @@ function comboKey(obj) {
 
 // ── Existing data ──────────────────────────────────────────────────────────
 function loadExisting() {
-  const raw = document.getElementById('existingJson').value.trim();
+  let raw = document.getElementById('existingJson').value.trim();
   if (!raw) return;
   try {
+    raw = raw.replace(/^(var|const|let)\s+\w+\s*=\s*/, '').replace(/;?\s*$/, '');
     const arr = JSON.parse(raw);
     if (!Array.isArray(arr)) throw new Error('Not an array');
     existingKeys = new Set(arr.map(comboKey));
