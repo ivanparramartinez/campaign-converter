@@ -685,43 +685,41 @@ function runMerge() {
   const type    = document.getElementById('compare-type').value;
   if (!results.length || !s) return;
 
-  // For 'update': new record wins on conflict. For 'keep': existing wins.
-  const overrides = {};
+  // Read mode directly from the radio button (source of truth)
+  const modeEl = document.querySelector('input[name="merge-mode"]:checked');
+  const mode   = modeEl ? modeEl.value : _mergeMode;
+
+  // Use a Map (insertion-order preserved) — existing records first
+  const mergedMap = new Map();
+  store[type].forEach(r => mergedMap.set(makeKey(r, s.keyFields), r));
+
+  // Apply new data on top
   results.forEach(r => {
+    const key = makeKey(r.record, s.keyFields);
     if (r.status === 'new') {
-      overrides[makeKey(r.record, s.keyFields)] = r.record;
-    } else if (r.status === 'conflict' && _mergeMode === 'update') {
-      overrides[makeKey(r.record, s.keyFields)] = r.record;
+      mergedMap.set(key, r.record);          // add new record
+    } else if (r.status === 'conflict' && mode === 'update') {
+      mergedMap.set(key, r.record);          // replace with new value
     }
-    // 'keep' mode: conflicts not added to overrides, existing stays
+    // 'match' and 'conflict' with 'keep': leave existing unchanged
   });
 
-  // Start with original, replacing where overrides exist
-  const merged = store[type].map(existing => {
-    const key = makeKey(existing, s.keyFields);
-    return overrides[key] ? overrides[key] : existing;
-  });
-
-  // Append new records
-  results.forEach(r => {
-    if (r.status === 'new') merged.push(r.record);
-  });
-
+  const merged = [...mergedMap.values()];
   _mergedArray = merged;
 
-  const newAdded     = results.filter(r => r.status === 'new').length;
+  const newAdded      = results.filter(r => r.status === 'new').length;
   const conflictCount = results.filter(r => r.status === 'conflict').length;
-  const replaced     = _mergeMode === 'update' ? conflictCount : 0;
-  const kept         = _mergeMode === 'keep'   ? conflictCount : 0;
-  const unchanged    = store[type].length - replaced - kept;
+  const replaced      = mode === 'update' ? conflictCount : 0;
+  const kept          = mode === 'keep'   ? conflictCount : 0;
+  const unchanged     = store[type].length - (mode === 'update' ? conflictCount : 0);
 
   const statPills = [
     `<span class="stat-pill"><b>${merged.length}</b> total in merge</span>`,
     `<span class="stat-pill" style="color:var(--muted2)"><b>${unchanged}</b> unchanged</span>`,
   ];
-  if (_mergeMode === 'update' && replaced > 0)
+  if (mode === 'update' && replaced > 0)
     statPills.push(`<span class="stat-pill conflict"><b>${replaced}</b> replaced with new</span>`);
-  if (_mergeMode === 'keep' && kept > 0)
+  if (mode === 'keep' && kept > 0)
     statPills.push(`<span class="stat-pill" style="color:var(--muted2)"><b>${kept}</b> conflicts kept as-is</span>`);
   if (newAdded > 0)
     statPills.push(`<span class="stat-pill new"><b>${newAdded}</b> added</span>`);
