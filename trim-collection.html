@@ -173,9 +173,9 @@
       <select id="inBrand" style="width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:13px;padding:7px 11px;border-radius:4px;outline:none;text-transform:none">
         <option value="">— Select brand —</option>
         <option value="GMC">GMC</option>
-        <option value="CHEVROLET">CHEVROLET</option>
-        <option value="BUICK">BUICK</option>
-        <option value="CADILLAC">CADILLAC</option>
+        <option value="Chevrolet">Chevrolet</option>
+        <option value="Buick">Buick</option>
+        <option value="Cadillac">Cadillac</option>
       </select>
     </div>
 
@@ -223,8 +223,27 @@
         </div>
         <button class="btn btn-icon" onclick="addPair()" title="Add pair" style="margin-top:18px">+</button>
       </div>
-      <div class="hint">Or bulk — one pair per line: <code style="color:var(--accent2)">3SA SLE</code></div>
-      <textarea id="bulkTrim" rows="3" placeholder="3SA SLE&#10;3SB SLT&#10;3SC Denali"></textarea>
+
+      <!-- MMC filter for this trim pair -->
+      <div style="margin-bottom:10px">
+        <label>Aplica a MMCs</label>
+        <select id="inTrimFilterMode" onchange="renderTrimFilterMMCs()" style="margin-bottom:6px">
+          <option value="all">Todos los MMCs</option>
+          <option value="only">Solo para algunos</option>
+          <option value="exclude">Excluir de algunos</option>
+        </select>
+        <div id="trimFilterMMCsWrap" style="display:none">
+          <div id="trimFilterMMCsList" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px"></div>
+        </div>
+      </div>
+
+      <div class="hint">
+        Bulk — una por línea. Filtro MMC opcional al final:<br>
+        <code style="color:var(--accent2)">3SA SLE</code> → todos<br>
+        <code style="color:var(--accent2)">3SA SLE only:TC10543,TK10906</code> → solo esos<br>
+        <code style="color:var(--accent2)">3SA SLE excl:TK10906</code> → excluir ese
+      </div>
+      <textarea id="bulkTrim" rows="4" placeholder="3SA SLE&#10;3SB SLT only:TC10543,TC10753&#10;3SC Denali excl:TK10906"></textarea>
       <button class="btn btn-sm" onclick="bulkAddPairs()" style="margin-top:6px;width:100%">↑ Add all lines</button>
       <div class="tag-header">
         <span class="tag-count" id="pairsCount">0 pairs</span>
@@ -265,6 +284,7 @@
         <button class="btn btn-sm" onclick="copyOutput()" id="copyBtn">⎘ Copy</button>
         <button class="btn btn-sm" onclick="copyOutputFlat()" id="copyFlatBtn">⎘ Copy objects</button>
         <button class="btn btn-sm btn-accent" onclick="downloadOutput()">↓ Download</button>
+        <button class="btn btn-sm" onclick="clearResults()" style="border-color:var(--danger);color:var(--danger)" onmouseover="this.style.background='var(--danger)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'">↺ Limpiar</button>
       </div>
     </div>
 
@@ -355,10 +375,41 @@ function renderList(key) {
   document.getElementById(c.countId).textContent = `${n} ${c.label}${n !== 1 ? 's' : ''}`;
 }
 
+// ── Trim MMC filter UI ─────────────────────────────────────────────────────
+function renderTrimFilterMMCs() {
+  const mode = document.getElementById('inTrimFilterMode').value;
+  const wrap = document.getElementById('trimFilterMMCsWrap');
+  const list = document.getElementById('trimFilterMMCsList');
+  if (mode === 'all') { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  list.innerHTML = state.mmcs.map(mmc =>
+    `<label style="display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:12px;background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:3px 8px;cursor:pointer">
+      <input type="checkbox" value="${mmc}" style="width:auto;margin:0;padding:0"> ${mmc}
+    </label>`
+  ).join('');
+}
+
+function getSelectedFilterMMCs() {
+  return [...document.querySelectorAll('#trimFilterMMCsList input:checked')].map(el => el.value);
+}
+
+function trimAppliesTo(pair, mmc) {
+  if (pair.filterMode === 'all') return true;
+  if (pair.filterMode === 'only')    return pair.filterMMCs.includes(mmc);
+  if (pair.filterMode === 'exclude') return !pair.filterMMCs.includes(mmc);
+  return true;
+}
+
+function filterLabel(pair) {
+  if (pair.filterMode === 'all' || !pair.filterMMCs.length) return '';
+  const label = pair.filterMode === 'only' ? 'solo' : 'excl.';
+  return ` <span style="font-size:10px;color:var(--muted2);margin-left:3px">[${label}: ${pair.filterMMCs.join(', ')}]</span>`;
+}
+
 function renderPairList() {
   const el = document.getElementById('pairList');
   el.innerHTML = state.pairs.map((p, i) =>
-    `<span class="tag pair">${p.trim} → ${p.text}<span class="del" onclick="removePair(${i})">×</span></span>`
+    `<span class="tag pair">${p.trim} → ${p.text}${filterLabel(p)}<span class="del" onclick="removePair(${i})">×</span></span>`
   ).join('');
   const n = state.pairs.length;
   document.getElementById('pairsCount').textContent = `${n} pair${n !== 1 ? 's' : ''}`;
@@ -368,9 +419,14 @@ function addPair() {
   const trim = document.getElementById('inTrim').value.trim().toUpperCase();
   const text = document.getElementById('inTrimText').value.trim();
   if (!trim || !text) return;
-  if (!state.pairs.find(p => p.trim === trim && p.text === text)) state.pairs.push({ trim, text });
+  const filterMode = document.getElementById('inTrimFilterMode').value;
+  const filterMMCs = filterMode !== 'all' ? getSelectedFilterMMCs() : [];
+  if (!state.pairs.find(p => p.trim === trim && p.text === text))
+    state.pairs.push({ trim, text, filterMode, filterMMCs });
   document.getElementById('inTrim').value = '';
   document.getElementById('inTrimText').value = '';
+  document.getElementById('inTrimFilterMode').value = 'all';
+  renderTrimFilterMMCs();
   document.getElementById('inTrim').focus();
   renderPairList();
 }
@@ -378,12 +434,21 @@ function addPair() {
 function bulkAddPairs() {
   const lines = document.getElementById('bulkTrim').value.split('\n').map(l => l.trim()).filter(Boolean);
   lines.forEach(line => {
+    // Check for filter token at the end: only:MMC1,MMC2 or excl:MMC1,MMC2
+    let filterMode = 'all';
+    let filterMMCs = [];
+    const filterMatch = line.match(/\s+(only|excl):([^\s]+)$/i);
+    if (filterMatch) {
+      filterMode = filterMatch[1].toLowerCase() === 'only' ? 'only' : 'exclude';
+      filterMMCs = filterMatch[2].toUpperCase().split(',').filter(Boolean);
+      line = line.slice(0, filterMatch.index).trim();
+    }
     const idx = line.search(/\s/);
     if (idx === -1) return;
     const trim = line.slice(0, idx).toUpperCase();
     const text = line.slice(idx).trim();
     if (trim && text && !state.pairs.find(p => p.trim === trim && p.text === text))
-      state.pairs.push({ trim, text });
+      state.pairs.push({ trim, text, filterMode, filterMMCs });
   });
   document.getElementById('bulkTrim').value = '';
   renderPairList();
@@ -401,6 +466,7 @@ function generate() {
   }
   const combos = [];
   for (const y of years) for (const m of mmcs) for (const p of pairs) {
+    if (!trimAppliesTo(p, m)) continue;  // respeta el filtro MMC del trim
     const obj = { BRAND: brandVal, MODEL_YR: isNaN(parseInt(y)) ? y : parseInt(y), MMC: m, TRIM: p.trim, TRIM_TEXT: p.text };
     obj._isDup = existingKeys.size > 0 && existingKeys.has(comboKey(obj));
     combos.push(obj);
@@ -492,6 +558,15 @@ function highlightJson(raw) {
 }
 
 // ── Copy / Download ────────────────────────────────────────────────────────
+function clearResults() {
+  generated = null;
+  currentView = 'all';
+  document.getElementById('totalCount').textContent = '0';
+  document.getElementById('statsChips').innerHTML = '';
+  document.getElementById('diffToggles').style.display = 'none';
+  document.getElementById('outputBox').innerHTML = '<span style="color:var(--muted)">// Configure the fields and press Generate</span>';
+}
+
 function copyOutput() {
   if (!generated) { alert('Generate first.'); return; }
   const items = generated.filter(c => {
@@ -558,7 +633,11 @@ document.getElementById('inTrimText').addEventListener('keydown', e => { if(e.ke
 // ── Globals ────────────────────────────────────────────────────────────────
 document.getElementById('inBrand').addEventListener('change', e => saveGlobals({ brand: e.target.value }));
 const _tcRenderList = renderList;
-renderList = function(key) { _tcRenderList(key); if (key === 'years') saveGlobals({ years: state.years }); };
+renderList = function(key) {
+  _tcRenderList(key);
+  if (key === 'years') saveGlobals({ years: state.years });
+  if (key === 'mmcs')  renderTrimFilterMMCs(); // refresh MMC checkboxes when MMCs change
+};
 initGlobals({
   onBrand: () => {},
   onYears: (years) => { state.years = [...years]; _tcRenderList('years'); },
