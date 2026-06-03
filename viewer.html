@@ -614,6 +614,14 @@ function runCompare() {
         <span style="display:inline-block;width:5px;height:5px;background:var(--accent);border-radius:50%"></span>
         Merge — original + new + conflicts resolved
       </div>
+      <div style="display:flex;gap:6px;font-family:var(--mono);font-size:11px">
+        <label id="merge-opt-update" onclick="setMergeMode('update')" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.5);color:var(--accent);border-radius:3px;padding:3px 10px;transition:all 0.13s">
+          <input type="radio" name="merge-mode" value="update" checked style="width:auto;margin:0;accent-color:var(--accent)"> Update conflicts
+        </label>
+        <label id="merge-opt-keep" onclick="setMergeMode('keep')" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;background:transparent;border:1px solid var(--border2);color:var(--muted2);border-radius:3px;padding:3px 10px;transition:all 0.13s">
+          <input type="radio" name="merge-mode" value="keep" style="width:auto;margin:0;accent-color:var(--accent)"> Keep existing
+        </label>
+      </div>
       <div style="margin-left:auto;display:flex;gap:8px">
         <button onclick="runMerge()" style="background:var(--accent);color:#000;border:1px solid var(--accent);font-family:var(--mono);font-size:11px;font-weight:600;padding:5px 14px;border-radius:4px;cursor:pointer;letter-spacing:0.06em">⚡ Generate merge</button>
         <button id="copy-merge-btn" onclick="copyMerge()" style="display:none;background:transparent;border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:5px 14px;border-radius:4px;cursor:pointer;letter-spacing:0.06em">⎘ Copy</button>
@@ -653,6 +661,19 @@ function copyFiltered() {
 
 // ── MERGE ──────────────────────────────────────────────────────────────────
 let _mergedArray = null;
+let _mergeMode = 'update'; // 'update' | 'keep'
+
+function setMergeMode(mode) {
+  _mergeMode = mode;
+  const activeStyle  = 'background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.5);color:var(--accent)';
+  const inactiveStyle = 'background:transparent;border:1px solid var(--border2);color:var(--muted2)';
+  const upd  = document.getElementById('merge-opt-update');
+  const keep = document.getElementById('merge-opt-keep');
+  if (upd && keep) {
+    upd.style.cssText  = upd.style.cssText.replace(/background:[^;]+;border:[^;]+;color:[^;]+/, mode === 'update' ? activeStyle : inactiveStyle);
+    keep.style.cssText = keep.style.cssText.replace(/background:[^;]+;border:[^;]+;color:[^;]+/, mode === 'keep' ? activeStyle : inactiveStyle);
+  }
+}
 
 function runMerge() {
   const results = _compareResults;
@@ -660,21 +681,24 @@ function runMerge() {
   const type    = document.getElementById('compare-type').value;
   if (!results.length || !s) return;
 
-  // Build a map of new/conflict records keyed by their key fields
+  // For 'update': new record wins on conflict. For 'keep': existing wins.
   const overrides = {};
   results.forEach(r => {
-    if (r.status === 'new' || r.status === 'conflict') {
+    if (r.status === 'new') {
+      overrides[makeKey(r.record, s.keyFields)] = r.record;
+    } else if (r.status === 'conflict' && _mergeMode === 'update') {
       overrides[makeKey(r.record, s.keyFields)] = r.record;
     }
+    // 'keep' mode: conflicts not added to overrides, existing stays
   });
 
-  // Start with original, replacing conflicts in-place
+  // Start with original, replacing where overrides exist
   const merged = store[type].map(existing => {
     const key = makeKey(existing, s.keyFields);
     return overrides[key] ? overrides[key] : existing;
   });
 
-  // Append new records (they weren't in original)
+  // Append new records
   results.forEach(r => {
     if (r.status === 'new') merged.push(r.record);
   });
@@ -682,15 +706,22 @@ function runMerge() {
   _mergedArray = merged;
 
   const newAdded     = results.filter(r => r.status === 'new').length;
-  const replaced     = results.filter(r => r.status === 'conflict').length;
-  const unchanged    = store[type].length - replaced;
+  const conflictCount = results.filter(r => r.status === 'conflict').length;
+  const replaced     = _mergeMode === 'update' ? conflictCount : 0;
+  const kept         = _mergeMode === 'keep'   ? conflictCount : 0;
+  const unchanged    = store[type].length - replaced - kept;
 
-  document.getElementById('merge-stats').innerHTML = [
+  const statPills = [
     `<span class="stat-pill"><b>${merged.length}</b> total in merge</span>`,
     `<span class="stat-pill" style="color:var(--muted2)"><b>${unchanged}</b> unchanged</span>`,
-    `<span class="stat-pill conflict"><b>${replaced}</b> replaced</span>`,
-    `<span class="stat-pill new"><b>${newAdded}</b> added</span>`,
-  ].join('');
+  ];
+  if (_mergeMode === 'update' && replaced > 0)
+    statPills.push(`<span class="stat-pill conflict"><b>${replaced}</b> replaced with new</span>`);
+  if (_mergeMode === 'keep' && kept > 0)
+    statPills.push(`<span class="stat-pill" style="color:var(--muted2)"><b>${kept}</b> conflicts kept as-is</span>`);
+  if (newAdded > 0)
+    statPills.push(`<span class="stat-pill new"><b>${newAdded}</b> added</span>`);
+  document.getElementById('merge-stats').innerHTML = statPills.join('');
 
   const out = document.getElementById('merge-output');
   out.style.display = 'block';
