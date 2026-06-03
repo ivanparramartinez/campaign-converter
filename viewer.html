@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GM Data Viewer</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a; --surface: #141414; --surface2: #1c1c1c;
+    --border: #262626; --border2: #333;
+    --accent: #fbbf24; --accent2: #00c8ff;
+    --text: #e8e8e0; --muted: #555; --muted2: #888;
+    --danger: #ff4455; --success: #00e676; --warning: #ffbb00; --conflict: #fb923c;
+    --mono: 'IBM Plex Mono', monospace; --sans: 'IBM Plex Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+
+  header { border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--bg); z-index: 200; }
+  .logo { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
+  .logo span { color: var(--accent); }
+  .header-stats { display: flex; gap: 16px; font-family: var(--mono); font-size: 11px; color: var(--muted2); }
+  .header-stats b { color: var(--accent); }
+
+  .layout { display: grid; grid-template-columns: 340px 1fr; height: calc(100vh - 94px); }
+
+  /* SIDEBAR */
+  .sidebar { border-right: 1px solid var(--border); padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; height: 100%; }
+
+  .ds-section { border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .ds-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 12px; cursor: pointer; background: var(--surface);
+    font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    transition: background 0.15s; user-select: none;
+  }
+  .ds-header:hover { background: var(--surface2); }
+  .ds-header .ds-label { display: flex; align-items: center; gap: 8px; }
+  .ds-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border2); flex-shrink: 0; transition: background 0.2s; }
+  .ds-dot.loaded { background: var(--success); }
+  .ds-count { font-size: 10px; color: var(--muted2); font-weight: 400; }
+  .ds-chevron { color: var(--muted); font-size: 10px; transition: transform 0.2s; }
+  .ds-section.open .ds-chevron { transform: rotate(180deg); }
+  .ds-body { display: none; padding: 10px 12px; border-top: 1px solid var(--border); background: var(--bg); }
+  .ds-section.open .ds-body { display: block; }
+  .ds-body textarea { width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-family: var(--mono); font-size: 11px; padding: 7px 10px; border-radius: 4px; outline: none; resize: vertical; line-height: 1.6; }
+  .ds-body textarea:focus { border-color: var(--accent); }
+  .ds-body textarea::placeholder { color: var(--muted); }
+  .ds-actions { display: flex; gap: 6px; margin-top: 7px; }
+
+  label { display: block; font-size: 11px; font-weight: 500; color: var(--muted2); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
+  select { width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-family: var(--mono); font-size: 13px; padding: 7px 11px; border-radius: 4px; outline: none; transition: border-color 0.15s; }
+  select:focus { border-color: var(--accent); }
+
+  .btn { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border2); cursor: pointer; transition: all 0.15s; background: transparent; color: var(--text); }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-accent { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+  .btn-accent:hover { background: #f59e0b; border-color: #f59e0b; color: #000; }
+  .btn-danger { border-color: var(--danger); color: var(--danger); }
+  .btn-danger:hover { background: var(--danger); color: #fff; }
+
+  /* MAIN */
+  .main { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+
+  .tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 24px; background: var(--bg); }
+  .tab { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 12px 16px; cursor: pointer; color: var(--muted2); border-bottom: 2px solid transparent; transition: all 0.15s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .tab-content { padding: 20px 24px; overflow-y: auto; flex: 1; min-height: 0; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* BROWSER */
+  .filter-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .filter-row.four { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+  .section-title { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted2); margin-bottom: 10px; padding-bottom: 7px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 7px; }
+  .section-title::before { content: ''; display: inline-block; width: 5px; height: 5px; background: var(--accent); border-radius: 50%; }
+
+  .data-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; margin-bottom: 24px; }
+  .data-table th { text-align: left; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted2); padding: 6px 10px; border-bottom: 1px solid var(--border2); font-weight: 600; }
+  .data-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+  .data-table tr:hover td { background: var(--surface); }
+  .code-cell { color: var(--accent2); }
+  .empty-msg { font-family: var(--mono); font-size: 12px; color: var(--muted); padding: 20px 0; text-align: center; }
+
+  /* COMPARE */
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .compare-ta { width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-family: var(--mono); font-size: 11px; padding: 8px 11px; border-radius: 4px; outline: none; resize: vertical; line-height: 1.6; }
+  .compare-ta:focus { border-color: var(--accent); }
+  .compare-ta::placeholder { color: var(--muted); }
+
+  .status-badge { display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.08em; padding: 2px 8px; border-radius: 3px; white-space: nowrap; }
+  .status-new      { background: rgba(0,230,118,0.1);  color: var(--success);  border: 1px solid rgba(0,230,118,0.3); }
+  .status-match    { background: rgba(100,100,100,0.1); color: var(--muted2);  border: 1px solid var(--border2); }
+  .status-conflict { background: rgba(251,146,60,0.1); color: var(--conflict); border: 1px solid rgba(251,146,60,0.3); }
+
+  .diff-old { color: var(--danger);   text-decoration: line-through; font-family: var(--mono); font-size: 11px; }
+  .diff-new { color: var(--success);  font-family: var(--mono); font-size: 11px; }
+
+  .results-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .stat-pill { font-family: var(--mono); font-size: 11px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 3px; padding: 3px 10px; color: var(--muted2); }
+  .stat-pill b { color: var(--text); }
+  .stat-pill.new      { border-color: rgba(0,230,118,0.3);  color: var(--success); }
+  .stat-pill.match    { border-color: var(--border2); }
+  .stat-pill.conflict { border-color: rgba(251,146,60,0.3);  color: var(--conflict); }
+
+  .filter-btns { display: flex; gap: 6px; margin-left: auto; }
+  .filter-btn { font-family: var(--mono); font-size: 10px; padding: 3px 10px; border-radius: 3px; border: 1px solid var(--border2); cursor: pointer; background: transparent; color: var(--muted2); transition: all 0.13s; }
+  .filter-btn.active { background: var(--surface2); color: var(--text); border-color: var(--accent); }
+
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
+    .filter-row { grid-template-columns: 1fr 1fr; }
+    .compare-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<div style="border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:16px;background:var(--bg);position:sticky;top:0;z-index:300">
+  <a href="index.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;display:flex;align-items:center;gap:6px">← Campaign Converter</a>
+  <div style="flex:1"></div>
+  <a href="models.html"          style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Models</a>
+  <a href="checker.html"         style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Checker</a>
+  <a href="generator.html"       style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Generator</a>
+  <a href="trim-collection.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Trim Collection</a>
+  <a href="exteriors.html"       style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Exteriors</a>
+  <a href="interior.html"        style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Interior</a>
+  <a href="viewer.html"          style="font-family:var(--mono);font-size:11px;color:var(--accent);text-decoration:none;padding:4px 10px;border-radius:3px">Viewer</a>
+</div>
+
+<header>
+  <div class="logo">GM <span>//</span> Data Viewer</div>
+  <div class="header-stats" id="headerStats">
+    <span>Sin datos cargados</span>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR: LOAD DATA -->
+  <div class="sidebar">
+
+    <!-- INTERIOR -->
+    <div class="ds-section open" id="ds-interior">
+      <div class="ds-header" onclick="toggleSection('interior')">
+        <div class="ds-label">
+          <span class="ds-dot" id="dot-interior"></span>
+          Interior
+          <span class="ds-count" id="count-interior"></span>
+        </div>
+        <span class="ds-chevron">▼</span>
+      </div>
+      <div class="ds-body">
+        <textarea id="ta-interior" rows="5" placeholder="var INTERIOR = [{&quot;BRAND&quot;:&quot;GMC&quot;,&quot;MODEL_YR&quot;:&quot;2025&quot;,...}]&#10;&#10;o directamente el array JSON: [{...},{...}]"></textarea>
+        <div class="ds-actions">
+          <button class="btn btn-accent" onclick="loadData('interior')">Cargar</button>
+          <button class="btn btn-danger" onclick="clearData('interior')">Limpiar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXTERIOR -->
+    <div class="ds-section" id="ds-exterior">
+      <div class="ds-header" onclick="toggleSection('exterior')">
+        <div class="ds-label">
+          <span class="ds-dot" id="dot-exterior"></span>
+          Exterior
+          <span class="ds-count" id="count-exterior"></span>
+        </div>
+        <span class="ds-chevron">▼</span>
+      </div>
+      <div class="ds-body">
+        <textarea id="ta-exterior" rows="5" placeholder="var EXTERIOR = [{&quot;BRAND&quot;:&quot;GMC&quot;,&quot;MODEL_YR&quot;:&quot;2025&quot;,...}]"></textarea>
+        <div class="ds-actions">
+          <button class="btn btn-accent" onclick="loadData('exterior')">Cargar</button>
+          <button class="btn btn-danger" onclick="clearData('exterior')">Limpiar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRIM -->
+    <div class="ds-section" id="ds-trim">
+      <div class="ds-header" onclick="toggleSection('trim')">
+        <div class="ds-label">
+          <span class="ds-dot" id="dot-trim"></span>
+          Trim Collection
+          <span class="ds-count" id="count-trim"></span>
+        </div>
+        <span class="ds-chevron">▼</span>
+      </div>
+      <div class="ds-body">
+        <textarea id="ta-trim" rows="5" placeholder="var TRIM = [{&quot;BRAND&quot;:&quot;GMC&quot;,&quot;MODEL_YR&quot;:2025,&quot;MMC&quot;:&quot;TC10543&quot;,...}]"></textarea>
+        <div class="ds-actions">
+          <button class="btn btn-accent" onclick="loadData('trim')">Cargar</button>
+          <button class="btn btn-danger" onclick="clearData('trim')">Limpiar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODELS -->
+    <div class="ds-section" id="ds-models">
+      <div class="ds-header" onclick="toggleSection('models')">
+        <div class="ds-label">
+          <span class="ds-dot" id="dot-models"></span>
+          Models
+          <span class="ds-count" id="count-models"></span>
+        </div>
+        <span class="ds-chevron">▼</span>
+      </div>
+      <div class="ds-body">
+        <textarea id="ta-models" rows="5" placeholder="var MODELS = [{&quot;MMC&quot;:&quot;TT35743&quot;,&quot;BRAND&quot;:&quot;GMC&quot;,...}]"></textarea>
+        <div class="ds-actions">
+          <button class="btn btn-accent" onclick="loadData('models')">Cargar</button>
+          <button class="btn btn-danger" onclick="clearData('models')">Limpiar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLEAR ALL -->
+    <button class="btn btn-danger" onclick="clearAll()" style="width:100%;margin-top:4px">⊘ Limpiar todo</button>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('browser')">Browser</div>
+      <div class="tab" onclick="switchTab('compare')">Comparar</div>
+    </div>
+
+    <!-- BROWSER TAB -->
+    <div class="tab-content">
+      <div class="tab-panel active" id="panel-browser">
+
+        <!-- Filters -->
+        <div class="filter-row four">
+          <div>
+            <label>Brand</label>
+            <select id="f-brand" onchange="onBrandChange()"><option value="">— Todas —</option></select>
+          </div>
+          <div>
+            <label>Model Year</label>
+            <select id="f-year" onchange="onYearChange()"><option value="">— Todos —</option></select>
+          </div>
+          <div>
+            <label>Nameplate</label>
+            <select id="f-plate" onchange="renderBrowser()"><option value="">— Todos —</option></select>
+          </div>
+          <div>
+            <label>MMC</label>
+            <select id="f-mmc" onchange="renderBrowser()"><option value="">— Todos —</option></select>
+          </div>
+        </div>
+
+        <div id="browser-results">
+          <div class="empty-msg">Carga datos desde el panel izquierdo para explorarlos aquí.</div>
+        </div>
+      </div>
+
+      <!-- COMPARE TAB -->
+      <div class="tab-panel" id="panel-compare">
+
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+          <div>
+            <label>Tipo de datos a comparar</label>
+            <select id="compare-type" style="width:200px" onchange="clearCompareResults()">
+              <option value="interior">Interior</option>
+              <option value="exterior">Exterior</option>
+              <option value="trim">Trim Collection</option>
+              <option value="models">Models</option>
+            </select>
+          </div>
+          <button class="btn btn-accent" onclick="runCompare()" style="margin-top:18px">⚡ Comparar</button>
+          <button class="btn" onclick="clearCompareResults()" style="margin-top:18px">↺ Limpiar</button>
+        </div>
+
+        <div>
+          <label>Nuevos datos a verificar</label>
+          <textarea class="compare-ta" id="compare-input" rows="8" placeholder="Pega aquí el array nuevo que quieres verificar contra los datos cargados&#10;&#10;var INTERIOR = [{...}]  o  [{...},{...}]"></textarea>
+        </div>
+
+        <div id="compare-results" style="margin-top:16px"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── DATA STORE ─────────────────────────────────────────────────────────────
+const store = { interior: [], exterior: [], trim: [], models: [] };
+
+// ── SCHEMA DEFINITIONS ──────────────────────────────────────────────────────
+// keyFields: fields that identify a record (code uniqueness)
+// valueFields: fields that can differ (trigger CONFLICT)
+// labelField: display name for browser
+const schemas = {
+  interior: {
+    keyFields:   ['BRAND','MODEL_YR','VEH_NAME_PLATE','INTERIOR_CODE'],
+    valueFields: ['INTERIOR_TEXT'],
+    codeField:   'INTERIOR_CODE',
+    textField:   'INTERIOR_TEXT',
+    plateField:  'VEH_NAME_PLATE',
+    mmcField:    null,
+    label: 'Interior',
+  },
+  exterior: {
+    keyFields:   ['BRAND','MODEL_YR','VEH_NAME_PLATE','DERIVED_FIELDS1'],
+    valueFields: ['EXTERIOR_TEXT'],
+    codeField:   'DERIVED_FIELDS1',
+    textField:   'EXTERIOR_TEXT',
+    plateField:  'VEH_NAME_PLATE',
+    mmcField:    null,
+    label: 'Exterior',
+  },
+  trim: {
+    keyFields:   ['BRAND','MODEL_YR','MMC','TRIM'],
+    valueFields: ['TRIM_TEXT'],
+    codeField:   'TRIM',
+    textField:   'TRIM_TEXT',
+    plateField:  null,
+    mmcField:    'MMC',
+    label: 'Trim',
+  },
+  models: {
+    keyFields:   ['MMC','BRAND','MODEL_YR'],
+    valueFields: ['MODEL_NAME'],
+    codeField:   'MMC',
+    textField:   'MODEL_NAME',
+    plateField:  null,
+    mmcField:    'MMC',
+    label: 'Models',
+  },
+};
+
+// ── PARSE ───────────────────────────────────────────────────────────────────
+function parseInput(raw) {
+  raw = raw.trim();
+  if (!raw) throw new Error('Vacío');
+  // Strip JS variable declaration: var NAME = [...] or const/let NAME = [...]
+  raw = raw.replace(/^(var|const|let)\s+\w+\s*=\s*/, '').replace(/;?\s*$/, '');
+  return JSON.parse(raw);
+}
+
+// ── LOAD / CLEAR ────────────────────────────────────────────────────────────
+function loadData(type) {
+  const raw = document.getElementById(`ta-${type}`).value;
+  try {
+    const arr = parseInput(raw);
+    if (!Array.isArray(arr)) throw new Error('No es un array');
+    store[type] = arr;
+    document.getElementById(`dot-${type}`).classList.add('loaded');
+    document.getElementById(`count-${type}`).textContent = `${arr.length} registros`;
+    updateHeaderStats();
+    updateFilterOptions();
+    renderBrowser();
+  } catch(e) {
+    alert(`Error parseando ${type}: ${e.message}`);
+  }
+}
+
+function clearData(type) {
+  store[type] = [];
+  document.getElementById(`dot-${type}`).classList.remove('loaded');
+  document.getElementById(`count-${type}`).textContent = '';
+  updateHeaderStats();
+  updateFilterOptions();
+  renderBrowser();
+}
+
+function clearAll() {
+  ['interior','exterior','trim','models'].forEach(clearData);
+}
+
+function updateHeaderStats() {
+  const parts = Object.entries(store)
+    .filter(([,v]) => v.length > 0)
+    .map(([k,v]) => `${schemas[k].label}: <b>${v.length}</b>`);
+  document.getElementById('headerStats').innerHTML = parts.length
+    ? parts.join('<span style="color:var(--border2);margin:0 4px">|</span>')
+    : '<span>Sin datos cargados</span>';
+}
+
+// ── ACCORDION ───────────────────────────────────────────────────────────────
+function toggleSection(type) {
+  document.getElementById(`ds-${type}`).classList.toggle('open');
+}
+
+// ── TABS ────────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const names = ['browser','compare'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`panel-${name}`).classList.add('active');
+}
+
+// ── FILTER OPTIONS ──────────────────────────────────────────────────────────
+function unique(arr) { return [...new Set(arr)].filter(Boolean).sort(); }
+
+function str(v) { return String(v ?? ''); }
+
+function getAllRecords() {
+  return [...store.interior, ...store.exterior, ...store.trim, ...store.models];
+}
+
+function updateFilterOptions() {
+  const all = getAllRecords();
+
+  const brands = unique(all.map(r => str(r.BRAND)));
+  setOptions('f-brand', brands, true);
+  onBrandChange();
+}
+
+function setOptions(id, values, addAll = false) {
+  const sel = document.getElementById(id);
+  const prev = sel.value;
+  sel.innerHTML = (addAll ? '<option value="">— Todas —</option>' : '<option value="">— Todos —</option>') +
+    values.map(v => `<option value="${v}">${v}</option>`).join('');
+  if (values.includes(prev)) sel.value = prev;
+}
+
+function onBrandChange() {
+  const brand = document.getElementById('f-brand').value;
+  const all = getAllRecords();
+  const filtered = brand ? all.filter(r => str(r.BRAND) === brand) : all;
+  const years = unique(filtered.map(r => str(r.MODEL_YR)));
+  setOptions('f-year', years, true);
+  onYearChange();
+}
+
+function onYearChange() {
+  const brand = document.getElementById('f-brand').value;
+  const year  = document.getElementById('f-year').value;
+  const all = getAllRecords();
+  const filtered = all.filter(r =>
+    (!brand || str(r.BRAND) === brand) &&
+    (!year  || str(r.MODEL_YR) === year)
+  );
+  const plates = unique(filtered.map(r => str(r.VEH_NAME_PLATE)).filter(Boolean));
+  const mmcs   = unique(filtered.map(r => str(r.MMC)).filter(Boolean));
+  setOptions('f-plate', plates, true);
+  setOptions('f-mmc',   mmcs,   true);
+  renderBrowser();
+}
+
+// ── BROWSER RENDER ──────────────────────────────────────────────────────────
+function filterStore(type) {
+  const brand = document.getElementById('f-brand').value;
+  const year  = document.getElementById('f-year').value;
+  const plate = document.getElementById('f-plate').value;
+  const mmc   = document.getElementById('f-mmc').value;
+  const s = schemas[type];
+  return store[type].filter(r =>
+    (!brand || str(r.BRAND)       === brand) &&
+    (!year  || str(r.MODEL_YR)    === year)  &&
+    (!plate || !s.plateField || str(r[s.plateField]) === plate) &&
+    (!mmc   || !s.mmcField   || str(r[s.mmcField])   === mmc)
+  );
+}
+
+function renderBrowser() {
+  const container = document.getElementById('browser-results');
+  const hasData = Object.values(store).some(a => a.length > 0);
+
+  if (!hasData) {
+    container.innerHTML = '<div class="empty-msg">Carga datos desde el panel izquierdo para explorarlos aquí.</div>';
+    return;
+  }
+
+  let html = '';
+
+  // INTERIOR
+  if (store.interior.length) {
+    const rows = filterStore('interior');
+    html += renderTable('Interior', ['INTERIOR_CODE','INTERIOR_TEXT','VEH_NAME_PLATE','BRAND','MODEL_YR'], rows,
+      r => `<tr><td class="code-cell">${r.INTERIOR_CODE??''}</td><td>${r.INTERIOR_TEXT??''}</td><td style="color:var(--muted2)">${r.VEH_NAME_PLATE??''}</td><td style="color:var(--muted2)">${r.BRAND??''}</td><td style="color:var(--muted2)">${r.MODEL_YR??''}</td></tr>`
+    );
+  }
+
+  // EXTERIOR
+  if (store.exterior.length) {
+    const rows = filterStore('exterior');
+    html += renderTable('Exterior', ['COLOR CODE','EXTERIOR_TEXT','VEH_NAME_PLATE','BRAND','MODEL_YR'], rows,
+      r => `<tr><td class="code-cell">${r.DERIVED_FIELDS1??''}</td><td>${r.EXTERIOR_TEXT??''}</td><td style="color:var(--muted2)">${r.VEH_NAME_PLATE??''}</td><td style="color:var(--muted2)">${r.BRAND??''}</td><td style="color:var(--muted2)">${r.MODEL_YR??''}</td></tr>`
+    );
+  }
+
+  // TRIM
+  if (store.trim.length) {
+    const rows = filterStore('trim');
+    html += renderTable('Trim Collection', ['TRIM','TRIM_TEXT','MMC','BRAND','MODEL_YR'], rows,
+      r => `<tr><td class="code-cell">${r.TRIM??''}</td><td>${r.TRIM_TEXT??''}</td><td style="color:var(--muted2)">${r.MMC??''}</td><td style="color:var(--muted2)">${r.BRAND??''}</td><td style="color:var(--muted2)">${r.MODEL_YR??''}</td></tr>`
+    );
+  }
+
+  // MODELS
+  if (store.models.length) {
+    const rows = filterStore('models');
+    html += renderTable('Models', ['MMC','MODEL_NAME','BRAND','MODEL_YR'], rows,
+      r => `<tr><td class="code-cell">${r.MMC??''}</td><td>${r.MODEL_NAME??''}</td><td style="color:var(--muted2)">${r.BRAND??''}</td><td style="color:var(--muted2)">${r.MODEL_YR??''}</td></tr>`
+    );
+  }
+
+  container.innerHTML = html || '<div class="empty-msg">No hay registros con los filtros actuales.</div>';
+}
+
+function renderTable(title, headers, rows, rowFn) {
+  const count = rows.length;
+  return `
+    <div class="section-title">${title} <span style="color:var(--muted);font-weight:400;margin-left:6px">${count} registro${count!==1?'s':''}</span></div>
+    ${count === 0 ? '<div class="empty-msg" style="margin-bottom:20px">Sin resultados con este filtro.</div>' : `
+    <table class="data-table">
+      <thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map(rowFn).join('')}</tbody>
+    </table>`}
+  `;
+}
+
+// ── COMPARE ─────────────────────────────────────────────────────────────────
+let compareView = 'all';
+
+function clearCompareResults() {
+  document.getElementById('compare-results').innerHTML = '';
+  compareView = 'all';
+}
+
+function makeKey(obj, keyFields) {
+  return keyFields.map(f => str(obj[f]).toUpperCase()).join('|');
+}
+
+function runCompare() {
+  const type = document.getElementById('compare-type').value;
+  const raw  = document.getElementById('compare-input').value;
+  const s    = schemas[type];
+
+  if (!store[type].length) {
+    alert(`No hay datos de ${s.label} cargados. Carga primero los datos existentes en el panel izquierdo.`);
+    return;
+  }
+
+  let newArr;
+  try {
+    newArr = parseInput(raw);
+    if (!Array.isArray(newArr)) throw new Error('No es un array');
+  } catch(e) {
+    alert(`Error parseando: ${e.message}`);
+    return;
+  }
+
+  // Build index from existing data
+  const existingIndex = {};
+  store[type].forEach(r => {
+    existingIndex[makeKey(r, s.keyFields)] = r;
+  });
+
+  // Classify each new record
+  const results = newArr.map(r => {
+    const key = makeKey(r, s.keyFields);
+    if (!existingIndex[key]) return { status: 'new', record: r, existing: null };
+    const ex = existingIndex[key];
+    // Check value fields
+    const diffs = s.valueFields.filter(f => str(r[f]).trim() !== str(ex[f]).trim());
+    if (diffs.length > 0) {
+      return { status: 'conflict', record: r, existing: ex, diffs };
+    }
+    return { status: 'match', record: r, existing: ex };
+  });
+
+  const newCount      = results.filter(r => r.status === 'new').length;
+  const matchCount    = results.filter(r => r.status === 'match').length;
+  const conflictCount = results.filter(r => r.status === 'conflict').length;
+
+  renderCompareResults(results, s, newCount, matchCount, conflictCount);
+}
+
+function renderCompareResults(results, s, newCount, matchCount, conflictCount) {
+  compareView = 'all';
+  const container = document.getElementById('compare-results');
+
+  const headerHtml = `
+    <div class="results-header">
+      <span class="stat-pill"><b>${results.length}</b> total</span>
+      <span class="stat-pill new"><b>${newCount}</b> nuevos</span>
+      <span class="stat-pill match"><b>${matchCount}</b> exactos</span>
+      <span class="stat-pill conflict"><b>${conflictCount}</b> conflictos</span>
+      <div class="filter-btns">
+        <button class="filter-btn active" id="fbtn-all"      onclick="setCompareView('all',      arguments[0], ${JSON.stringify(results).replace(/</g,'\\u003c')}, ${JSON.stringify(s).replace(/</g,'\\u003c')})">Todos</button>
+        <button class="filter-btn"        id="fbtn-new"      onclick="setCompareView('new',      arguments[0], ${JSON.stringify(results).replace(/</g,'\\u003c')}, ${JSON.stringify(s).replace(/</g,'\\u003c')})">Nuevos</button>
+        <button class="filter-btn"        id="fbtn-conflict" onclick="setCompareView('conflict', arguments[0], ${JSON.stringify(results).replace(/</g,'\\u003c')}, ${JSON.stringify(s).replace(/</g,'\\u003c')})">Conflictos</button>
+        <button class="filter-btn"        id="fbtn-match"    onclick="setCompareView('match',    arguments[0], ${JSON.stringify(results).replace(/</g,'\\u003c')}, ${JSON.stringify(s).replace(/</g,'\\u003c')})">Exactos</button>
+      </div>
+    </div>
+    <div id="compare-table-wrap"></div>
+  `;
+  container.innerHTML = headerHtml;
+  renderCompareTable(results, s, 'all');
+}
+
+function setCompareView(view, e, results, s) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+  renderCompareTable(results, s, view);
+}
+
+function renderCompareTable(results, s, view) {
+  const filtered = view === 'all' ? results : results.filter(r => r.status === view);
+  const wrap = document.getElementById('compare-table-wrap');
+  if (!wrap) return;
+
+  if (!filtered.length) {
+    wrap.innerHTML = '<div class="empty-msg">Sin resultados en esta categoría.</div>';
+    return;
+  }
+
+  const rows = filtered.map(r => {
+    const rec = r.record;
+    let statusBadge, detailHtml = '';
+
+    if (r.status === 'new') {
+      statusBadge = '<span class="status-badge status-new">🟢 NUEVO</span>';
+    } else if (r.status === 'match') {
+      statusBadge = '<span class="status-badge status-match">✓ IGUAL</span>';
+    } else {
+      statusBadge = '<span class="status-badge status-conflict">⚠️ CONFLICTO</span>';
+      detailHtml = r.diffs.map(f => `
+        <div style="margin-top:4px;font-size:11px">
+          <span style="color:var(--muted2);font-family:var(--mono)">${f}:</span>
+          <span class="diff-old">${r.existing[f]??'(vacío)'}</span>
+          <span style="color:var(--muted2);margin:0 4px">→</span>
+          <span class="diff-new">${rec[f]??'(vacío)'}</span>
+        </div>`).join('');
+    }
+
+    // Key info cells
+    const code = rec[s.codeField] ?? '';
+    const text = rec[s.textField] ?? '';
+    const brand = rec.BRAND ?? '';
+    const year  = rec.MODEL_YR ?? '';
+    const plate = s.plateField ? (rec[s.plateField] ?? '') : '';
+    const mmc   = s.mmcField && s.mmcField !== s.codeField ? (rec[s.mmcField] ?? '') : '';
+
+    const extraCells = [brand, year, plate, mmc].filter(Boolean)
+      .map(v => `<td style="color:var(--muted2);font-size:11px">${v}</td>`).join('');
+
+    return `<tr>
+      <td style="min-width:90px">${statusBadge}</td>
+      <td class="code-cell" style="min-width:80px">${code}</td>
+      <td style="min-width:160px">${text}${detailHtml}</td>
+      ${extraCells}
+    </tr>`;
+  }).join('');
+
+  const extraHeaders = ['BRAND','MODEL_YR',
+    s.plateField ? 'NAMEPLATE' : '',
+    s.mmcField && s.mmcField !== s.codeField ? 'MMC' : ''
+  ].filter(Boolean).map(h => `<th>${h}</th>`).join('');
+
+  wrap.innerHTML = `
+    <table class="data-table">
+      <thead><tr>
+        <th>Estado</th>
+        <th>${s.codeField}</th>
+        <th>${s.textField}</th>
+        ${extraHeaders}
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+</script>
+</body>
+</html>

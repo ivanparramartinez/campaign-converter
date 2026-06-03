@@ -1,6 +1,6 @@
 /**
  * Campaign Converter — Shared Globals
- * Persists brand + years across collection pages via localStorage.
+ * Persists brand, years, and nameplates across collection pages via localStorage.
  */
 
 const CC_KEY = 'cc_globals';
@@ -21,15 +21,12 @@ function clearGlobals() {
 }
 
 // ── Global bar ─────────────────────────────────────────────────────────────
-// Injected between the top-nav and the tool header.
-// Each page calls initGlobals({ onBrand, onYears }) to wire up callbacks.
 
 let _callbacks = {};
 
-function initGlobals({ onBrand, onYears } = {}) {
-  _callbacks = { onBrand, onYears };
+function initGlobals({ onBrand, onYears, onNameplates } = {}) {
+  _callbacks = { onBrand, onYears, onNameplates };
 
-  // Inject bar container right after the top-nav div
   const bar = document.createElement('div');
   bar.id = 'cc-global-bar';
   bar.style.cssText = [
@@ -37,7 +34,7 @@ function initGlobals({ onBrand, onYears } = {}) {
     'padding:6px 20px',
     'display:flex',
     'align-items:center',
-    'gap:10px',
+    'gap:8px',
     'background:#0d0d0d',
     'font-family:"IBM Plex Mono",monospace',
     'font-size:11px',
@@ -45,7 +42,6 @@ function initGlobals({ onBrand, onYears } = {}) {
     'min-height:32px',
   ].join(';');
 
-  // Insert after the sticky nav (first div child of body)
   const nav = document.body.querySelector('div');
   nav.insertAdjacentElement('afterend', bar);
 
@@ -57,7 +53,7 @@ function renderGlobalBar() {
   const bar = document.getElementById('cc-global-bar');
   if (!bar) return;
   const g = getGlobals();
-  const hasAny = g.brand || (g.years && g.years.length);
+  const hasAny = g.brand || (g.years && g.years.length) || (g.nameplates && g.nameplates.length);
 
   if (!hasAny) {
     bar.innerHTML = '<span style="color:#444;letter-spacing:0.08em">GLOBALS — none set</span>';
@@ -65,12 +61,24 @@ function renderGlobalBar() {
   }
 
   const chips = [];
+
   if (g.brand) {
     chips.push(`<span style="background:rgba(200,255,0,0.08);border:1px solid rgba(200,255,0,0.25);color:#c8ff00;border-radius:3px;padding:2px 9px;letter-spacing:0.06em">${g.brand}</span>`);
   }
-  (g.years || []).forEach(y => {
-    chips.push(`<span style="background:#1c1c1c;border:1px solid #333;color:#e8e8e0;border-radius:3px;padding:2px 9px">${y}</span>`);
-  });
+
+  if (g.years && g.years.length) {
+    chips.push(`<span style="color:#555;padding:0 2px">YR</span>`);
+    g.years.forEach(y => {
+      chips.push(`<span style="background:#1c1c1c;border:1px solid #333;color:#e8e8e0;border-radius:3px;padding:2px 9px">${y}</span>`);
+    });
+  }
+
+  if (g.nameplates && g.nameplates.length) {
+    chips.push(`<span style="color:#555;padding:0 2px">NP</span>`);
+    g.nameplates.forEach(np => {
+      chips.push(`<span style="background:#1c1c1c;border:1px solid rgba(0,200,255,0.25);color:#00c8ff;border-radius:3px;padding:2px 9px">${np}</span>`);
+    });
+  }
 
   bar.innerHTML = `
     <span style="color:#555;letter-spacing:0.08em;white-space:nowrap">GLOBALS</span>
@@ -82,7 +90,6 @@ function renderGlobalBar() {
 function applyGlobals() {
   const g = getGlobals();
 
-  // Apply brand
   if (g.brand) {
     const sel = document.getElementById('inBrand');
     if (sel) {
@@ -91,17 +98,19 @@ function applyGlobals() {
     }
   }
 
-  // Apply years
   if (g.years && g.years.length && _callbacks.onYears) {
     _callbacks.onYears(g.years);
+  }
+
+  if (g.nameplates && g.nameplates.length && _callbacks.onNameplates) {
+    _callbacks.onNameplates(g.nameplates);
   }
 }
 
 function clearGlobalsAndPage() {
   clearGlobals();
-  // Reset brand select
   const sel = document.getElementById('inBrand');
   if (sel) sel.value = '';
-  // Reset years via callback
-  if (_callbacks.onYears) _callbacks.onYears([]);
+  if (_callbacks.onYears)      _callbacks.onYears([]);
+  if (_callbacks.onNameplates) _callbacks.onNameplates([]);
 }

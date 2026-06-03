@@ -256,6 +256,7 @@
   <a href="trim-collection.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Trim Collection</a>
   <a href="exteriors.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Exteriors</a>
   <a href="interior.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Interior</a>
+  <a href="viewer.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Viewer</a>
 </div>
 
 
@@ -393,6 +394,27 @@
       </div>
     </div>
 
+    <!-- MMC → MODEL NAME MAPPING -->
+    <div class="section">
+      <div class="section-title">MMC → Marketing Model <span style="font-weight:400;color:var(--muted);font-size:9px;letter-spacing:0.04em">(opcional)</span></div>
+      <div class="notice" style="margin-bottom:10px">Si un MMC de las combinaciones tiene mapeo aquí, sobreescribe el campo Marketing Model en el JSON generado.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:flex-end;margin-bottom:8px">
+        <div>
+          <label>MMC</label>
+          <input type="text" id="newMmcMap" placeholder="4ABCD" style="margin-bottom:0;text-transform:uppercase">
+        </div>
+        <div>
+          <label>Model Name</label>
+          <input type="text" id="newModelMap" placeholder="Escalade ESV" style="margin-bottom:0">
+        </div>
+        <button class="btn btn-sm" onclick="addMmcMapping()" style="padding:8px 10px">+</button>
+      </div>
+      <div class="hint" style="margin-top:0">O bulk — una por línea: <span style="color:var(--accent2);font-family:var(--mono)">4ABCD Escalade</span></div>
+      <textarea id="mmcMapBulk" rows="3" placeholder="4ABCD Escalade&#10;4EFGH Escalade ESV&#10;5ABCD Escalade-V&#10;5EFGH Escalade-V ESV" style="font-size:12px;width:100%;resize:vertical;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--mono);padding:7px 11px;border-radius:4px;outline:none;line-height:1.8"></textarea>
+      <button class="btn btn-sm" onclick="bulkAddMmcMappings()" style="margin-top:6px;width:100%">↑ Agregar todas</button>
+      <div class="tag-list" id="mmcMapList" style="margin-top:8px"></div>
+    </div>
+
     <!-- COMBINATIONS -->
     <div class="section">
       <div class="section-title">Combinaciones (Model Code / Trim / Ext Color)</div>
@@ -430,6 +452,7 @@
 // ─── STATE ───────────────────────────────────────────────────────────────────
 let eventCodes = ["00","30","34","38","40","42A","42B","42C","43","48","50","TB1","TB2","TB3","TB4","TB5","TB6","TB7"];
 let interiorColors = [];
+let mmcModelMap = {}; // { "4ABCD": "Escalade", "5ABCD": "Escalade-V", ... }
 // combos are read directly from textarea
 let generatedJSON = null;
 
@@ -473,6 +496,43 @@ function updateCounter() {
   document.getElementById('recordLabel').textContent = 'Event codes';
 }
 
+// ─── MMC → MODEL MAPPING ─────────────────────────────────────────────────────
+function renderMmcMapList() {
+  const el = document.getElementById('mmcMapList');
+  el.innerHTML = Object.entries(mmcModelMap).map(([mmc, name]) =>
+    `<span class="tag"><span style="color:var(--accent2)">${mmc}</span>&nbsp;→&nbsp;${name}<span class="del" onclick="removeMmcMapping('${mmc}')">×</span></span>`
+  ).join('');
+}
+
+function addMmcMapping() {
+  const mmc  = document.getElementById('newMmcMap').value.trim().toUpperCase();
+  const name = document.getElementById('newModelMap').value.trim();
+  if (!mmc || !name) return;
+  mmcModelMap[mmc] = name;
+  document.getElementById('newMmcMap').value = '';
+  document.getElementById('newModelMap').value = '';
+  document.getElementById('newMmcMap').focus();
+  renderMmcMapList();
+}
+
+function bulkAddMmcMappings() {
+  const lines = document.getElementById('mmcMapBulk').value.split('\n').map(l => l.trim()).filter(Boolean);
+  lines.forEach(line => {
+    const idx = line.search(/\s/);
+    if (idx === -1) return;
+    const mmc  = line.slice(0, idx).toUpperCase();
+    const name = line.slice(idx).trim();
+    if (mmc && name) mmcModelMap[mmc] = name;
+  });
+  document.getElementById('mmcMapBulk').value = '';
+  renderMmcMapList();
+}
+
+function removeMmcMapping(mmc) {
+  delete mmcModelMap[mmc];
+  renderMmcMapList();
+}
+
 // ─── MUTATIONS ───────────────────────────────────────────────────────────────
 function addEventCode() {
   const inp = document.getElementById('newEventCode');
@@ -497,6 +557,8 @@ function removeInteriorColor(i) { interiorColors.splice(i, 1); renderInteriorCol
 // ─── ENTER KEY SHORTCUTS ─────────────────────────────────────────────────────
 document.getElementById('newEventCode').addEventListener('keydown', e => { if(e.key==='Enter') addEventCode(); });
 document.getElementById('newInteriorColor').addEventListener('keydown', e => { if(e.key==='Enter') addInteriorColor(); });
+document.getElementById('newMmcMap').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('newModelMap').focus(); });
+document.getElementById('newModelMap').addEventListener('keydown', e => { if(e.key==='Enter') addMmcMapping(); });
 document.getElementById('combosTextarea').addEventListener('input', updateCombosCount);
 
 // ─── GENERATE ────────────────────────────────────────────────────────────────
@@ -561,7 +623,8 @@ function generate() {
     for (const loyaltyFlag of loyaltyVariants) {
       const combo = rand(validCombos);
       const intColor = rand(interiorColors);
-      const subjectLine = `${ec}_${base.modelYear}_${abbr}_${base.marketingModel.replace(/\s+/g,'_')}_${combo.model}_${intColor}_${combo.ext}_${combo.trim}`;
+      const effectiveModel = mmcModelMap[combo.model] || base.marketingModel;
+      const subjectLine = `${ec}_${base.modelYear}_${abbr}_${effectiveModel.replace(/\s+/g,'_')}_${combo.model}_${intColor}_${combo.ext}_${combo.trim}`;
       records.push({
         subjectLine,
         message: {
@@ -573,6 +636,7 @@ function generate() {
         },
         targetData: {
           ...base,
+          marketingModel: effectiveModel,
           loyaltyMemberFlag: loyaltyFlag,
           eventCode: ec,
           trim: combo.trim,
@@ -638,7 +702,10 @@ function clearOutput() {
 function resetDefaults() {
   eventCodes = ["00","30","34","38","40","42A","42B","42C","43","48","50","TB1","TB2","TB3","TB4","TB5","TB6","TB7"];
   interiorColors = [];
+  mmcModelMap = {};
   document.getElementById('combosTextarea').value = '';
+  document.getElementById('mmcMapBulk').value = '';
+  renderMmcMapList();
   updateCombosCount();
   renderAll();
   document.getElementById('jsonOutput').innerHTML = '// Configura los datos y presiona "Generar JSON"';
