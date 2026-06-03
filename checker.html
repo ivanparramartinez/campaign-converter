@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GM Image Checker</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="globals.js"></script>
 <style>
   :root {
     --bg: #0a0a0a; --surface: #141414; --surface2: #1c1c1c;
@@ -200,6 +201,7 @@
   <a href="interior.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Interior</a>
   <a href="checker.html" style="font-family:var(--mono);font-size:11px;color:var(--accent);text-decoration:none;padding:4px 10px;border-radius:3px">Checker</a>
   <a href="generator.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Generator</a>
+  <a href="campaign.html" style="font-family:var(--mono);font-size:11px;color:#818cf8;text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s">Setup</a>
   <a href="viewer.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Viewer</a>
 </div>
 
@@ -538,7 +540,7 @@ function clearResults() {
 
 // ─── RENDER TABLE ─────────────────────────────────────────────────────────────
 function badgeHtml(r) {
-  if (r.status==='loading') return `<span class="badge badge-loading">⏳ Cargando</span>`;
+  if (r.status==='loading') return `<span class="badge badge-loading">⏳ Loading</span>`;
   if (r.status==='ok') return `<span class="badge badge-ok">✓ ${r.w}×${r.h}px</span>`;
   if (r.status==='bad') return `<span class="badge badge-bad">✗ Pixel ${r.w}×${r.h}px</span>`;
   return `<span class="badge badge-error">— Error</span>`;
@@ -562,7 +564,7 @@ function rowHtml(r, i) {
 function renderTable() {
   const c = document.getElementById('resultsContainer');
   if (!results.length) { c.innerHTML=`<div class="empty-state">Configure the parameters<br>and press Verify</div>`; return; }
-  c.innerHTML = `<table class="results-table"><thead><tr><th></th><th>Model Code</th><th>Trim</th><th>Ext. Color</th><th>Estado</th><th>URL</th></tr></thead><tbody>${results.map((r,i)=>rowHtml(r,i)).join('')}</tbody></table>`;
+  c.innerHTML = `<table class="results-table"><thead><tr><th></th><th>Model Code</th><th>Trim</th><th>Ext. Color</th><th>Status</th><th>URL</th></tr></thead><tbody>${results.map((r,i)=>rowHtml(r,i)).join('')}</tbody></table>`;
 }
 function updateRowStatus(i) {
   const r = results[i];
@@ -718,6 +720,29 @@ renderTags('extColors','extColorList');
 updatePreview();
 ['baseUrl','bodyType','brand','year','angle','filename'].forEach(id=>{
   document.getElementById(id).addEventListener('input', updatePreview);
+});
+
+// ─── GLOBALS INTEGRATION ──────────────────────────────────────────────────────
+// Model codes sync bidirectionally with globals.mmcs.
+// Trims and ext colors are read-only from globals (checker lacks full pair structure).
+const _chkRenderTags = renderTags;
+renderTags = function(key, listId) {
+  _chkRenderTags(key, listId);
+  if (key === 'modelCodes') saveGlobals({ mmcs: state.modelCodes });
+};
+
+initGlobals({
+  onMMCs:          (mmcs)  => { state.modelCodes = [...mmcs];  _chkRenderTags('modelCodes','modelCodeList'); },
+  onTrimPairs:     (pairs) => {
+    const codes = pairs.map(p => p.trim).filter(Boolean);
+    codes.forEach(c => { if (!state.trims.includes(c)) state.trims.push(c); });
+    _chkRenderTags('trims','trimList');
+  },
+  onExteriorPairs: (pairs) => {
+    const codes = pairs.map(p => p.code).filter(Boolean);
+    codes.forEach(c => { if (!state.extColors.includes(c)) state.extColors.push(c); });
+    _chkRenderTags('extColors','extColorList');
+  },
 });
 </script>
 </body>

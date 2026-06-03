@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Campaign Setup — Campaign Converter</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="globals.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0a; --surface: #141414; --surface2: #1c1c1c;
+    --border: #262626; --border2: #333;
+    --accent: #818cf8; --accent2: #00c8ff;
+    --text: #e8e8e0; --muted: #555; --muted2: #888;
+    --danger: #ff4455; --success: #00e676; --warning: #ffbb00;
+    --mono: 'IBM Plex Mono', monospace; --sans: 'IBM Plex Sans', sans-serif;
+    --c-mmc:  #34d399;
+    --c-trim: #f87171;
+    --c-ext:  #ff9f43;
+    --c-int:  #c084fc;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+
+  .topnav {
+    border-bottom: 1px solid var(--border); padding: 10px 20px;
+    display: flex; align-items: center; gap: 16px;
+    background: var(--bg); position: sticky; top: 0; z-index: 300;
+  }
+  .topnav a { font-family: var(--mono); font-size: 11px; color: var(--muted); text-decoration: none; padding: 4px 10px; border-radius: 3px; transition: color 0.1s; }
+  .topnav a:hover { color: var(--text); }
+  .topnav a.active { color: var(--accent); }
+  .topnav .back { letter-spacing: 0.1em; text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
+
+  header {
+    border-bottom: 1px solid var(--border); padding: 16px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg);
+  }
+  .logo { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
+  .logo span { color: var(--accent); }
+  .header-loaded { display: flex; gap: 8px; flex-wrap: wrap; font-family: var(--mono); font-size: 11px; align-items: center; }
+
+  .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 0; min-height: calc(100vh - 109px); }
+  .left-col { border-right: 1px solid var(--border); padding: 24px 28px; overflow-y: auto; display: flex; flex-direction: column; gap: 22px; }
+  .right-col { padding: 24px 28px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
+
+  /* SECTION */
+  .section { display: flex; flex-direction: column; gap: 7px; }
+  .section-title {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted2);
+    padding-bottom: 7px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 7px;
+  }
+  .section-title::before { content: ''; display: inline-block; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  .section-title .cnt { margin-left: auto; font-weight: 400; color: var(--muted); }
+  .section-title .cnt b { font-weight: 600; }
+  .hint { font-size: 11px; color: var(--muted); font-family: var(--mono); line-height: 1.7; }
+  .hint code { color: var(--accent2); }
+
+  textarea {
+    width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    font-family: var(--mono); font-size: 12px; padding: 9px 11px; border-radius: 4px; outline: none;
+    transition: border-color 0.15s; resize: vertical; line-height: 1.7;
+  }
+  textarea::placeholder { color: var(--muted); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 12px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 8px 16px; border-radius: 4px; border: 1px solid var(--border2);
+    cursor: pointer; transition: all 0.15s; background: transparent; color: var(--text);
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-accent { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+  .btn-accent:hover { background: #6d79e8; border-color: #6d79e8; color: #000; }
+  .btn-sm { padding: 5px 9px; font-size: 11px; }
+  .btn-danger { border-color: var(--danger); color: var(--danger); }
+  .btn-danger:hover { background: var(--danger); color: #fff; }
+
+  .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding-top: 6px; border-top: 1px solid var(--border); }
+
+  /* PREVIEW */
+  .prev-section { display: flex; flex-direction: column; gap: 6px; }
+  .prev-title {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted2);
+    padding-bottom: 6px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 7px;
+  }
+  .prev-title::before { content: ''; width: 5px; height: 5px; border-radius: 50%; display: inline-block; }
+  .prev-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+    padding: 10px 12px; font-family: var(--mono); font-size: 11px; line-height: 1.9;
+    color: var(--muted2); max-height: 150px; overflow-y: auto;
+  }
+  .tag-row { display: flex; flex-wrap: wrap; gap: 5px; }
+  .ptag { font-family: var(--mono); font-size: 11px; border-radius: 3px; padding: 2px 8px; border: 1px solid; }
+  .prev-empty { color: #333; }
+
+  /* STATUS */
+  #loadStatus { font-family: var(--mono); font-size: 11px; min-height: 18px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono); font-size: 10px; border-radius: 3px; padding: 2px 8px; border: 1px solid;
+  }
+
+  /* TOOL LINKS */
+  .tool-links { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+  .tool-link {
+    display: flex; flex-direction: column; gap: 3px;
+    font-family: var(--mono); font-size: 11px; text-decoration: none;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+    padding: 9px 11px; color: var(--muted2); transition: all 0.15s;
+  }
+  .tool-link:hover { border-color: var(--accent); color: var(--text); }
+  .tool-link .tl-num  { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+  .tool-link .tl-name { font-size: 12px; color: var(--text); }
+
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .left-col { border-right: none; border-bottom: 1px solid var(--border); }
+    .tool-links { grid-template-columns: repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <a href="index.html" class="back">← Campaign Converter</a>
+  <div style="flex:1"></div>
+  <a href="models.html">Models</a>
+  <a href="trim-collection.html">Trim Collection</a>
+  <a href="exteriors.html">Exteriors</a>
+  <a href="interior.html">Interior</a>
+  <a href="checker.html">Checker</a>
+  <a href="generator.html">Generator</a>
+  <a href="campaign.html" class="active">Setup</a>
+  <a href="viewer.html">Viewer</a>
+</div>
+
+<header>
+  <div class="logo">Campaign <span>//</span> Data Setup</div>
+  <div class="header-loaded" id="headerStatus"></div>
+</header>
+
+<div class="layout">
+
+  <!-- LEFT: INPUT ──────────────────────────────────────────────────────────── -->
+  <div class="left-col">
+
+    <!-- MMC / MODEL NAMES -->
+    <div class="section">
+      <div class="section-title" style="--dot-bg:var(--c-mmc)">
+        <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--c-mmc);flex-shrink:0"></span>
+        MMC / Model Names
+        <span class="cnt" id="cnt-mmc">—</span>
+      </div>
+      <div class="hint">One per line: <code>TC10543 Canyon</code> &nbsp;|&nbsp; <code>TK10906 Sierra 1500</code></div>
+      <textarea id="raw-mmc" rows="5" placeholder="TC10543 Canyon&#10;TK10906 Sierra 1500&#10;TT35743 Hummer EV Truck"></textarea>
+    </div>
+
+    <!-- TRIMS -->
+    <div class="section">
+      <div class="section-title">
+        <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--c-trim);flex-shrink:0"></span>
+        Trims
+        <span class="cnt" id="cnt-trim">—</span>
+      </div>
+      <div class="hint">
+        One per line: <code>3SA SLE</code> &nbsp;(applies to all MMCs)<br>
+        <code>3SA SLE only:TC10543,TK10906</code> &nbsp;→&nbsp; only those MMCs<br>
+        <code>3SA SLE excl:TK10906</code> &nbsp;→&nbsp; exclude that MMC
+      </div>
+      <textarea id="raw-trim" rows="6" placeholder="3SA SLE&#10;3SB SLT only:TC10543,TC10753&#10;4SB Denali excl:TK10906&#10;3VL AT4"></textarea>
+    </div>
+
+    <!-- EXTERIOR COLORS -->
+    <div class="section">
+      <div class="section-title">
+        <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--c-ext);flex-shrink:0"></span>
+        Exterior Colors
+        <span class="cnt" id="cnt-ext">—</span>
+      </div>
+      <div class="hint">One per line: <code>GAZ Summit White</code> &nbsp;|&nbsp; <code>GBA Onyx Black</code></div>
+      <textarea id="raw-ext" rows="5" placeholder="GAZ Summit White&#10;GBA Onyx Black&#10;G7C Satin Steel Metallic&#10;G42 Dark Sky Metallic"></textarea>
+    </div>
+
+    <!-- INTERIOR COLORS -->
+    <div class="section">
+      <div class="section-title">
+        <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--c-int);flex-shrink:0"></span>
+        Interior Colors
+        <span class="cnt" id="cnt-int">—</span>
+      </div>
+      <div class="hint">Tab or space separated: <code>H2G&nbsp;&nbsp;&nbsp;Jet Black Vinyl</code></div>
+      <textarea id="raw-int" rows="5" placeholder="H2G	Jet Black Vinyl&#10;H1T	Jet Black Cloth&#10;HVE	Perforated Leather - Dark Walnut Slate"></textarea>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="actions">
+      <button class="btn btn-accent" onclick="loadAll()">⚡ Load into all tools</button>
+      <button class="btn btn-danger btn-sm" onclick="clearAll()">↺ Clear all</button>
+      <span id="loadStatus"></span>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: PREVIEW ───────────────────────────────────────────────────────── -->
+  <div class="right-col">
+
+    <div class="prev-section">
+      <div class="prev-title">
+        <span style="background:var(--c-mmc)"></span>
+        MMC codes &amp; model names
+      </div>
+      <div class="prev-box" id="prev-mmc"><span class="prev-empty">— paste MMC / model names —</span></div>
+    </div>
+
+    <div class="prev-section">
+      <div class="prev-title">
+        <span style="background:var(--c-trim)"></span>
+        Trim pairs
+      </div>
+      <div class="prev-box" id="prev-trim"><span class="prev-empty">— paste trims —</span></div>
+    </div>
+
+    <div class="prev-section">
+      <div class="prev-title">
+        <span style="background:var(--c-ext)"></span>
+        Exterior color pairs
+      </div>
+      <div class="prev-box" id="prev-ext"><span class="prev-empty">— paste exterior colors —</span></div>
+    </div>
+
+    <div class="prev-section">
+      <div class="prev-title">
+        <span style="background:var(--c-int)"></span>
+        Interior color pairs
+      </div>
+      <div class="prev-box" id="prev-int"><span class="prev-empty">— paste interior colors —</span></div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding-top:14px">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Go to tool →</div>
+      <div class="tool-links">
+        <a href="checker.html" class="tool-link"><div class="tl-num">Tool 01</div><div class="tl-name">Image Checker</div></a>
+        <a href="generator.html" class="tool-link"><div class="tl-num">Tool 02</div><div class="tl-name">JSON Generator</div></a>
+        <a href="trim-collection.html" class="tool-link"><div class="tl-num">Tool 03</div><div class="tl-name">Trim Collection</div></a>
+        <a href="interior.html" class="tool-link"><div class="tl-num">Tool 04</div><div class="tl-name">Interior Builder</div></a>
+        <a href="exteriors.html" class="tool-link"><div class="tl-num">Tool 05</div><div class="tl-name">Exteriors</div></a>
+        <a href="models.html" class="tool-link"><div class="tl-num">Tool 06</div><div class="tl-name">Model Collection</div></a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── Parsers (mirror the same logic as the individual tools) ────────────────
+
+function parseMmc(raw) {
+  // "TC10543 Canyon" → { mmc, name }
+  const pairs = [];
+  raw.split('\n').map(l => l.trim()).filter(Boolean).forEach(line => {
+    const idx = line.search(/\s/);
+    if (idx === -1) return;
+    const mmc  = line.slice(0, idx).toUpperCase();
+    const name = line.slice(idx).trim();
+    if (mmc && name && !pairs.find(p => p.mmc === mmc)) pairs.push({ mmc, name });
+  });
+  return pairs;
+}
+
+function parseTrim(raw) {
+  // "3SA SLE" or "3SA SLE only:TC10543,TK10906" or "3SA SLE excl:TK10906"
+  const pairs = [];
+  raw.split('\n').map(l => l.trim()).filter(Boolean).forEach(line => {
+    let filterMode = 'all', filterMMCs = [];
+    const filterMatch = line.match(/\s+(only|excl):([^\s]+)$/i);
+    if (filterMatch) {
+      filterMode = filterMatch[1].toLowerCase() === 'only' ? 'only' : 'exclude';
+      filterMMCs = filterMatch[2].toUpperCase().split(',').filter(Boolean);
+      line = line.slice(0, filterMatch.index).trim();
+    }
+    const idx = line.search(/\s/);
+    if (idx === -1) return;
+    const trim = line.slice(0, idx).toUpperCase();
+    const text = line.slice(idx).trim();
+    if (trim && text && !pairs.find(p => p.trim === trim && p.text === text))
+      pairs.push({ trim, text, filterMode, filterMMCs });
+  });
+  return pairs;
+}
+
+function parseExt(raw) {
+  // "GAZ Summit White"
+  const pairs = [];
+  raw.split('\n').map(l => l.trim()).filter(Boolean).forEach(line => {
+    const idx = line.search(/\s/);
+    if (idx === -1) return;
+    const code = line.slice(0, idx).toUpperCase();
+    const name = line.slice(idx).trim();
+    if (code && name && !pairs.find(p => p.code === code)) pairs.push({ code, name });
+  });
+  return pairs;
+}
+
+function parseInt(raw) {
+  // "H2G\tJet Black Vinyl"  or  "H2G Jet Black Vinyl"
+  const pairs = [];
+  raw.split('\n').map(l => l.trim()).filter(Boolean).forEach(line => {
+    const idx = line.search(/\s/);
+    if (idx === -1) return;
+    const code = line.slice(0, idx).toUpperCase();
+    const text = line.slice(idx).trim();
+    if (code && text && !pairs.find(p => p.code === code)) pairs.push({ code, text });
+  });
+  return pairs;
+}
+
+// ── Live preview (fires on input) ─────────────────────────────────────────
+
+function updatePreview(section) {
+  const raw = document.getElementById(`raw-${section}`).value;
+  let items = [], color = '';
+
+  if (section === 'mmc') {
+    const pairs = parseMmc(raw);
+    items = pairs.map(p => ({ label: `${p.mmc} → ${p.name}` }));
+    color = '#34d399';
+    document.getElementById('cnt-mmc').innerHTML = pairs.length ? `<b>${pairs.length}</b> pairs` : '—';
+  } else if (section === 'trim') {
+    const pairs = parseTrim(raw);
+    items = pairs.map(p => {
+      let note = '';
+      if (p.filterMode === 'only')    note = ` <span style="color:var(--muted)">[only: ${p.filterMMCs.join(', ')}]</span>`;
+      if (p.filterMode === 'exclude') note = ` <span style="color:var(--muted)">[excl: ${p.filterMMCs.join(', ')}]</span>`;
+      return { label: `${p.trim} → ${p.text}`, note };
+    });
+    color = '#f87171';
+    document.getElementById('cnt-trim').innerHTML = pairs.length ? `<b>${pairs.length}</b> pairs` : '—';
+  } else if (section === 'ext') {
+    const pairs = parseExt(raw);
+    items = pairs.map(p => ({ label: `${p.code} → ${p.name}` }));
+    color = '#ff9f43';
+    document.getElementById('cnt-ext').innerHTML = pairs.length ? `<b>${pairs.length}</b> pairs` : '—';
+  } else if (section === 'int') {
+    const pairs = parseInt(raw);
+    items = pairs.map(p => ({ label: `${p.code} → ${p.text}` }));
+    color = '#c084fc';
+    document.getElementById('cnt-int').innerHTML = pairs.length ? `<b>${pairs.length}</b> pairs` : '—';
+  }
+
+  const el = document.getElementById(`prev-${section}`);
+  if (!items.length) {
+    el.innerHTML = `<span class="prev-empty">— paste data above —</span>`;
+    return;
+  }
+  const rgb = hexRgb(color);
+  el.innerHTML = `<div class="tag-row">${items.map(({ label, note = '' }) =>
+    `<span class="ptag" style="background:rgba(${rgb},0.07);border-color:rgba(${rgb},0.28);color:${color}">${label}</span>${note}`
+  ).join('')}</div>`;
+}
+
+function hexRgb(hex) {
+  const h = hex.replace('#','');
+  return `${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)}`;
+}
+
+// Wire up live preview
+['mmc','trim','ext','int'].forEach(s => {
+  document.getElementById(`raw-${s}`).addEventListener('input', () => updatePreview(s));
+});
+
+// ── Load all → globals ─────────────────────────────────────────────────────
+
+function loadAll() {
+  const mmcPairs  = parseMmc(document.getElementById('raw-mmc').value);
+  const trimPairs = parseTrim(document.getElementById('raw-trim').value);
+  const extPairs  = parseExt(document.getElementById('raw-ext').value);
+  const intPairs  = parseInt(document.getElementById('raw-int').value);
+
+  const hasAny = mmcPairs.length || trimPairs.length || extPairs.length || intPairs.length;
+  if (!hasAny) { showStatus('Paste at least one section of data first.', 'warn'); return; }
+
+  // Build derived globals
+  const mmcModelMap = {};
+  mmcPairs.forEach(p => { mmcModelMap[p.mmc] = p.name; });
+  const mmcs = mmcPairs.map(p => p.mmc);
+
+  saveGlobals({ mmcs, mmcModelMap, trimPairs, exteriorPairs: extPairs, interiorPairs: intPairs });
+
+  const parts = [];
+  if (mmcs.length)      parts.push(`${mmcs.length} MMC${mmcs.length !== 1 ? 's' : ''}`);
+  if (trimPairs.length) parts.push(`${trimPairs.length} trim${trimPairs.length !== 1 ? 's' : ''}`);
+  if (extPairs.length)  parts.push(`${extPairs.length} ext color${extPairs.length !== 1 ? 's' : ''}`);
+  if (intPairs.length)  parts.push(`${intPairs.length} int color${intPairs.length !== 1 ? 's' : ''}`);
+
+  showStatus(`✓ ${parts.join(' · ')} loaded into all tools`, 'ok');
+  renderHeaderStatus();
+}
+
+function clearAll() {
+  ['mmc','trim','ext','int'].forEach(s => {
+    document.getElementById(`raw-${s}`).value = '';
+    updatePreview(s);
+  });
+  saveGlobals({ mmcs: [], mmcModelMap: {}, trimPairs: [], exteriorPairs: [], interiorPairs: [] });
+  showStatus('All data cleared.', 'warn');
+  renderHeaderStatus();
+}
+
+// ── Status ─────────────────────────────────────────────────────────────────
+
+let _st;
+function showStatus(msg, type) {
+  const el = document.getElementById('loadStatus');
+  el.style.color = type === 'ok' ? 'var(--success)' : type === 'warn' ? 'var(--warning)' : 'var(--danger)';
+  el.textContent = msg;
+  clearTimeout(_st);
+  if (type === 'ok') _st = setTimeout(() => el.textContent = '', 5000);
+}
+
+// ── Header status chips ────────────────────────────────────────────────────
+
+function renderHeaderStatus() {
+  const g = getGlobals();
+  const el = document.getElementById('headerStatus');
+  const items = [
+    { key: 'mmcs',          label: 'MMC',  color: '#34d399', count: (g.mmcs || []).length },
+    { key: 'trimPairs',     label: 'TRIM', color: '#f87171', count: (g.trimPairs || []).length },
+    { key: 'exteriorPairs', label: 'EXT',  color: '#ff9f43', count: (g.exteriorPairs || []).length },
+    { key: 'interiorPairs', label: 'INT',  color: '#c084fc', count: (g.interiorPairs || []).length },
+  ];
+  el.innerHTML = items.map(({ label, color, count }) => {
+    if (!count) return '';
+    const rgb = hexRgb(color);
+    return `<span class="chip" style="background:rgba(${rgb},0.08);border-color:rgba(${rgb},0.28);color:${color}">${label} <b>${count}</b></span>`;
+  }).join('');
+}
+
+// ── Init: restore raw text from globals for reference ──────────────────────
+
+(function init() {
+  const g = getGlobals();
+
+  // Restore text areas from existing globals data
+  if (g.mmcModelMap && Object.keys(g.mmcModelMap).length) {
+    document.getElementById('raw-mmc').value =
+      Object.entries(g.mmcModelMap).map(([mmc, name]) => `${mmc} ${name}`).join('\n');
+  }
+  if (g.trimPairs && g.trimPairs.length) {
+    document.getElementById('raw-trim').value = g.trimPairs.map(p => {
+      let line = `${p.trim} ${p.text}`;
+      if (p.filterMode === 'only'    && p.filterMMCs.length) line += ` only:${p.filterMMCs.join(',')}`;
+      if (p.filterMode === 'exclude' && p.filterMMCs.length) line += ` excl:${p.filterMMCs.join(',')}`;
+      return line;
+    }).join('\n');
+  }
+  if (g.exteriorPairs && g.exteriorPairs.length) {
+    document.getElementById('raw-ext').value =
+      g.exteriorPairs.map(p => `${p.code} ${p.name}`).join('\n');
+  }
+  if (g.interiorPairs && g.interiorPairs.length) {
+    document.getElementById('raw-int').value =
+      g.interiorPairs.map(p => `${p.code}\t${p.text}`).join('\n');
+  }
+
+  ['mmc','trim','ext','int'].forEach(s => updatePreview(s));
+  renderHeaderStatus();
+})();
+</script>
+</body>
+</html>

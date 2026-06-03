@@ -149,6 +149,7 @@
   <a href="interior.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Interior</a>
   <a href="checker.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Checker</a>
   <a href="generator.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Generator</a>
+  <a href="campaign.html" style="font-family:var(--mono);font-size:11px;color:#818cf8;text-decoration:none;padding:4px 10px;border-radius:3px">Setup</a>
   <a href="viewer.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Viewer</a>
 </div>
 
@@ -547,16 +548,22 @@ document.getElementById('inColorName').addEventListener('keydown', e => { if(e.k
 
 // ── Globals ────────────────────────────────────────────────────────────────
 document.getElementById('inBrand').addEventListener('change', e => saveGlobals({ brand: e.target.value }));
+
 const _extRenderList = renderList;
 renderList = function(key) {
   _extRenderList(key);
   if (key === 'years')      saveGlobals({ years: state.years });
   if (key === 'nameplates') saveGlobals({ nameplates: state.nameplates });
 };
+
+const _extRenderPairList = renderPairList;
+renderPairList = function() { _extRenderPairList(); saveGlobals({ exteriorPairs: state.pairs }); };
+
 initGlobals({
-  onBrand: () => {},
+  onBrand:      ()           => {},
   onYears:      (years)      => { state.years      = [...years];      _extRenderList('years'); },
   onNameplates: (nameplates) => { state.nameplates = [...nameplates]; _extRenderList('nameplates'); },
+  onExteriorPairs: (pairs)   => { state.pairs      = pairs.map(p => ({ ...p })); _extRenderPairList(); },
 });
 </script>
 </body>

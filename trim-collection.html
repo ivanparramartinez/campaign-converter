@@ -151,6 +151,7 @@
   <a href="interior.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Interior</a>
   <a href="checker.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Checker</a>
   <a href="generator.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Generator</a>
+  <a href="campaign.html" style="font-family:var(--mono);font-size:11px;color:#818cf8;text-decoration:none;padding:4px 10px;border-radius:3px">Setup</a>
   <a href="viewer.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Viewer</a>
 </div>
 
@@ -240,9 +241,9 @@
 
       <div class="hint">
         Bulk — one per line. Optional MMC filter at the end:<br>
-        <code style="color:var(--accent2)">3SA SLE</code> → todos<br>
-        <code style="color:var(--accent2)">3SA SLE only:TC10543,TK10906</code> → solo esos<br>
-        <code style="color:var(--accent2)">3SA SLE excl:TK10906</code> → excluir ese
+        <code style="color:var(--accent2)">3SA SLE</code> → all MMCs<br>
+        <code style="color:var(--accent2)">3SA SLE only:TC10543,TK10906</code> → only those<br>
+        <code style="color:var(--accent2)">3SA SLE excl:TK10906</code> → exclude that one
       </div>
       <textarea id="bulkTrim" rows="4" placeholder="3SA SLE&#10;3SB SLT only:TC10543,TC10753&#10;3SC Denali excl:TK10906"></textarea>
       <button class="btn btn-sm" onclick="bulkAddPairs()" style="margin-top:6px;width:100%">↑ Add all lines</button>
@@ -285,7 +286,7 @@
         <button class="btn btn-sm" onclick="copyOutput()" id="copyBtn">⎘ Copy</button>
         <button class="btn btn-sm" onclick="copyOutputFlat()" id="copyFlatBtn">⎘ Copy objects</button>
         <button class="btn btn-sm btn-accent" onclick="downloadOutput()">↓ Download</button>
-        <button class="btn btn-sm" onclick="clearResults()" style="border-color:var(--danger);color:var(--danger)" onmouseover="this.style.background='var(--danger)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'">↺ Limpiar</button>
+        <button class="btn btn-sm" onclick="clearResults()" style="border-color:var(--danger);color:var(--danger)" onmouseover="this.style.background='var(--danger)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'">↺ Clear</button>
       </div>
     </div>
 
@@ -424,7 +425,7 @@ function trimAppliesTo(pair, mmc) {
 
 function filterLabel(pair) {
   if (pair.filterMode === 'all' || !pair.filterMMCs.length) return '';
-  const label = pair.filterMode === 'only' ? 'solo' : 'excl.';
+  const label = pair.filterMode === 'only' ? 'only' : 'excl.';
   return ` <span style="font-size:10px;color:var(--muted2);margin-left:3px">[${label}: ${pair.filterMMCs.join(', ')}]</span>`;
 }
 
@@ -655,15 +656,28 @@ document.getElementById('inTrimText').addEventListener('keydown', e => { if(e.ke
 
 // ── Globals ────────────────────────────────────────────────────────────────
 document.getElementById('inBrand').addEventListener('change', e => saveGlobals({ brand: e.target.value }));
+
 const _tcRenderList = renderList;
 renderList = function(key) {
   _tcRenderList(key);
   if (key === 'years') saveGlobals({ years: state.years });
-  if (key === 'mmcs')  renderTrimFilterMMCs(); // refresh MMC checkboxes when MMCs change
+  if (key === 'mmcs') {
+    saveGlobals({ mmcs: state.mmcs });
+    renderTrimFilterMMCs(); // refresh MMC checkboxes when MMCs change
+  }
 };
+
+const _tcRenderPairList = renderPairList;
+renderPairList = function() {
+  _tcRenderPairList();
+  saveGlobals({ trimPairs: state.pairs });
+};
+
 initGlobals({
   onBrand: () => {},
   onYears: (years) => { state.years = [...years]; _tcRenderList('years'); },
+  onMMCs:  (mmcs)  => { state.mmcs  = [...mmcs];  _tcRenderList('mmcs'); },
+  onTrimPairs: (pairs) => { state.pairs = pairs.map(p => ({ ...p })); _tcRenderPairList(); },
 });
 </script>
 </body>

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GM JSON Generator</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="globals.js"></script>
 <style>
   :root {
     --bg: #0d0d0d;
@@ -256,6 +257,7 @@
   <a href="interior.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Interior</a>
   <a href="checker.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Checker</a>
   <a href="generator.html" style="font-family:var(--mono);font-size:11px;color:var(--accent);text-decoration:none;padding:4px 10px;border-radius:3px">Generator</a>
+  <a href="campaign.html" style="font-family:var(--mono);font-size:11px;color:#818cf8;text-decoration:none;padding:4px 10px;border-radius:3px">Setup</a>
   <a href="viewer.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Viewer</a>
 </div>
 
@@ -421,7 +423,7 @@
       <div class="notice">One combination per line: <span style="color:var(--accent2);font-family:var(--mono)">TC10543 1SA G42</span>. Assigned randomly per event code.</div>
       <textarea id="combosTextarea" rows="8" placeholder="TC10543 1SA G42&#10;TC10543 3SA G6M&#10;TK10543 3VL G6M&#10;TK10543 4SB GAZ" style="margin-top:10px;width:100%;resize:vertical;font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--mono);padding:7px 11px;border-radius:4px;outline:none;line-height:1.8;text-transform:none;"></textarea>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
-        <span style="font-family:var(--mono);font-size:10px;color:var(--muted2)" id="combosCount">0 combinaciones</span>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--muted2)" id="combosCount">0 combinations</span>
         <button class="btn btn-sm" onclick="document.getElementById('combosTextarea').value='';updateCombosCount()">↺ Clear</button>
       </div>
     </div>
@@ -440,7 +442,7 @@
       <div style="display:flex;gap:8px">
         <button class="btn btn-sm" onclick="copyJSON()">⎘ Copy</button>
         <button class="btn btn-sm" onclick="copyJSONNoBrackets()" id="copyNbBtn">⎘ No brackets</button>
-        <button class="btn btn-sm btn-accent" onclick="downloadJSON()">↓ Descargar</button>
+        <button class="btn btn-sm btn-accent" onclick="downloadJSON()">↓ Download</button>
       </div>
     </div>
     <pre id="jsonOutput">// Configure the data and press "Generate JSON"</pre>
@@ -721,6 +723,33 @@ function resetDefaults() {
   generatedJSON = null;
   updateCounter();
 }
+
+// ─── GLOBALS INTEGRATION ──────────────────────────────────────────────────────
+// Interior colors are read from globals.interiorPairs (generator extracts just the code).
+// MMC→model map syncs bidirectionally.
+const _genRenderInterior = renderInteriorColors;
+renderInteriorColors = function() {
+  _genRenderInterior();
+  // Interior colors in generator are just codes; we can't reconstruct full pairs,
+  // so we don't write back to globals.interiorPairs from here.
+};
+
+const _genRenderMmcMap = renderMmcMapList;
+renderMmcMapList = function() {
+  _genRenderMmcMap();
+  saveGlobals({ mmcModelMap: mmcModelMap });
+};
+
+initGlobals({
+  onInteriorPairs: (pairs) => {
+    pairs.forEach(p => { if (p.code && !interiorColors.includes(p.code)) interiorColors.push(p.code); });
+    _genRenderInterior();
+  },
+  onMMCModelMap: (map) => {
+    Object.assign(mmcModelMap, map);
+    _genRenderMmcMap();
+  },
+});
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 renderAll();
