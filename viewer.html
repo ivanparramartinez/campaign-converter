@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -141,7 +141,7 @@
 <header>
   <div class="logo">GM <span>//</span> Data Viewer</div>
   <div class="header-stats" id="headerStats">
-    <span>Sin datos cargados</span>
+    <span>No data loaded</span>
   </div>
 </header>
 
@@ -163,8 +163,8 @@
       <div class="ds-body">
         <textarea id="ta-interior" rows="5" placeholder="var INTERIOR = [{&quot;BRAND&quot;:&quot;GMC&quot;,&quot;MODEL_YR&quot;:&quot;2025&quot;,...}]&#10;&#10;o directamente el array JSON: [{...},{...}]"></textarea>
         <div class="ds-actions">
-          <button class="btn btn-accent" onclick="loadData('interior')">Cargar</button>
-          <button class="btn btn-danger" onclick="clearData('interior')">Limpiar</button>
+          <button class="btn btn-accent" onclick="loadData('interior')">Load</button>
+          <button class="btn btn-danger" onclick="clearData('interior')">Clear</button>
         </div>
       </div>
     </div>
@@ -182,8 +182,8 @@
       <div class="ds-body">
         <textarea id="ta-exterior" rows="5" placeholder="var EXTERIOR = [{&quot;BRAND&quot;:&quot;GMC&quot;,&quot;MODEL_YR&quot;:&quot;2025&quot;,...}]"></textarea>
         <div class="ds-actions">
-          <button class="btn btn-accent" onclick="loadData('exterior')">Cargar</button>
-          <button class="btn btn-danger" onclick="clearData('exterior')">Limpiar</button>
+          <button class="btn btn-accent" onclick="loadData('exterior')">Load</button>
+          <button class="btn btn-danger" onclick="clearData('exterior')">Clear</button>
         </div>
       </div>
     </div>
@@ -201,8 +201,8 @@
       <div class="ds-body">
         <textarea id="ta-trim" rows="5" placeholder="var TRIM = [{&quot;BRAND&quot;:&quot;GMC&quot;,&quot;MODEL_YR&quot;:2025,&quot;MMC&quot;:&quot;TC10543&quot;,...}]"></textarea>
         <div class="ds-actions">
-          <button class="btn btn-accent" onclick="loadData('trim')">Cargar</button>
-          <button class="btn btn-danger" onclick="clearData('trim')">Limpiar</button>
+          <button class="btn btn-accent" onclick="loadData('trim')">Load</button>
+          <button class="btn btn-danger" onclick="clearData('trim')">Clear</button>
         </div>
       </div>
     </div>
@@ -220,14 +220,14 @@
       <div class="ds-body">
         <textarea id="ta-models" rows="5" placeholder="var MODELS = [{&quot;MMC&quot;:&quot;TT35743&quot;,&quot;BRAND&quot;:&quot;GMC&quot;,...}]"></textarea>
         <div class="ds-actions">
-          <button class="btn btn-accent" onclick="loadData('models')">Cargar</button>
-          <button class="btn btn-danger" onclick="clearData('models')">Limpiar</button>
+          <button class="btn btn-accent" onclick="loadData('models')">Load</button>
+          <button class="btn btn-danger" onclick="clearData('models')">Clear</button>
         </div>
       </div>
     </div>
 
     <!-- CLEAR ALL -->
-    <button class="btn btn-danger" onclick="clearAll()" style="width:100%;margin-top:4px">⊘ Limpiar todo</button>
+    <button class="btn btn-danger" onclick="clearAll()" style="width:100%;margin-top:4px">⊘ Clear all</button>
   </div>
 
   <!-- MAIN -->
@@ -263,7 +263,7 @@
         </div>
 
         <div id="browser-results">
-          <div class="empty-msg">Carga datos desde el panel izquierdo para explorarlos aquí.</div>
+          <div class="empty-msg">Load data from the left panel to explore it here.</div>
         </div>
       </div>
 
@@ -272,7 +272,7 @@
 
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
           <div>
-            <label>Tipo de datos a comparar</label>
+            <label>Data type to compare</label>
             <select id="compare-type" style="width:200px" onchange="clearCompareResults()">
               <option value="interior">Interior</option>
               <option value="exterior">Exterior</option>
@@ -280,13 +280,13 @@
               <option value="models">Models</option>
             </select>
           </div>
-          <button class="btn btn-accent" onclick="runCompare()" style="margin-top:18px">⚡ Comparar</button>
-          <button class="btn" onclick="clearCompareResults()" style="margin-top:18px">↺ Limpiar</button>
+          <button class="btn btn-accent" onclick="runCompare()" style="margin-top:18px">⚡ Compare</button>
+          <button class="btn" onclick="clearCompareResults()" style="margin-top:18px">↺ Clear</button>
         </div>
 
         <div>
-          <label>Nuevos datos a verificar</label>
-          <textarea class="compare-ta" id="compare-input" rows="8" placeholder="Pega aquí el array nuevo que quieres verificar contra los datos cargados&#10;&#10;var INTERIOR = [{...}]  o  [{...},{...}]"></textarea>
+          <label>New data to verify</label>
+          <textarea class="compare-ta" id="compare-input" rows="8" placeholder="Paste the new array to verify against loaded data&#10;&#10;var INTERIOR = [{...}]  o  [{...},{...}]"></textarea>
         </div>
 
         <div id="compare-results" style="margin-top:16px"></div>
@@ -346,7 +346,7 @@ const schemas = {
 // ── PARSE ───────────────────────────────────────────────────────────────────
 function parseInput(raw) {
   raw = raw.trim();
-  if (!raw) throw new Error('Vacío');
+  if (!raw) throw new Error('Empty');
   // Strip JS variable declaration: var NAME = [...] or const/let NAME = [...]
   raw = raw.replace(/^(var|const|let)\s+\w+\s*=\s*/, '').replace(/;?\s*$/, '');
   return JSON.parse(raw);
@@ -357,10 +357,10 @@ function loadData(type) {
   const raw = document.getElementById(`ta-${type}`).value;
   try {
     const arr = parseInput(raw);
-    if (!Array.isArray(arr)) throw new Error('No es un array');
+    if (!Array.isArray(arr)) throw new Error('Not an array');
     store[type] = arr;
     document.getElementById(`dot-${type}`).classList.add('loaded');
-    document.getElementById(`count-${type}`).textContent = `${arr.length} registros`;
+    document.getElementById(`count-${type}`).textContent = `${arr.length} records`;
     updateHeaderStats();
     updateFilterOptions();
     renderBrowser();
@@ -388,7 +388,7 @@ function updateHeaderStats() {
     .map(([k,v]) => `${schemas[k].label}: <b>${v.length}</b>`);
   document.getElementById('headerStats').innerHTML = parts.length
     ? parts.join('<span style="color:var(--border2);margin:0 4px">|</span>')
-    : '<span>Sin datos cargados</span>';
+    : '<span>No data loaded</span>';
 }
 
 // ── ACCORDION ───────────────────────────────────────────────────────────────
@@ -475,7 +475,7 @@ function renderBrowser() {
   const hasData = Object.values(store).some(a => a.length > 0);
 
   if (!hasData) {
-    container.innerHTML = '<div class="empty-msg">Carga datos desde el panel izquierdo para explorarlos aquí.</div>';
+    container.innerHTML = '<div class="empty-msg">Load data from the left panel to explore it here.</div>';
     return;
   }
 
@@ -513,14 +513,14 @@ function renderBrowser() {
     );
   }
 
-  container.innerHTML = html || '<div class="empty-msg">No hay registros con los filtros actuales.</div>';
+  container.innerHTML = html || '<div class="empty-msg">No hay records con los filtros actuales.</div>';
 }
 
 function renderTable(title, headers, rows, rowFn) {
   const count = rows.length;
   return `
-    <div class="section-title">${title} <span style="color:var(--muted);font-weight:400;margin-left:6px">${count} registro${count!==1?'s':''}</span></div>
-    ${count === 0 ? '<div class="empty-msg" style="margin-bottom:20px">Sin resultados con este filtro.</div>' : `
+    <div class="section-title">${title} <span style="color:var(--muted);font-weight:400;margin-left:6px">${count} record${count!==1?'s':''}</span></div>
+    ${count === 0 ? '<div class="empty-msg" style="margin-bottom:20px">No results with this filter.</div>' : `
     <table class="data-table">
       <thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
       <tbody>${rows.map(rowFn).join('')}</tbody>
@@ -549,16 +549,16 @@ function runCompare() {
   const s    = schemas[type];
 
   if (!store[type].length) {
-    alert(`No hay datos de ${s.label} cargados. Carga primero los datos existentes en el panel izquierdo.`);
+    alert(`No data loaded for that type. Load existing data first from the left panel.`);
     return;
   }
 
   let newArr;
   try {
     newArr = parseInput(raw);
-    if (!Array.isArray(newArr)) throw new Error('No es un array');
+    if (!Array.isArray(newArr)) throw new Error('Not an array');
   } catch(e) {
-    alert(`Error parseando: ${e.message}`);
+    alert(`Parse error: ${e.message}`);
     return;
   }
 
@@ -589,15 +589,15 @@ function runCompare() {
   container.innerHTML = `
     <div class="results-header">
       <span class="stat-pill"><b>${results.length}</b> total</span>
-      <span class="stat-pill new"><b>${newCount}</b> nuevos</span>
-      <span class="stat-pill match"><b>${matchCount}</b> exactos</span>
-      <span class="stat-pill conflict"><b>${conflictCount}</b> conflictos</span>
+      <span class="stat-pill new"><b>${newCount}</b> new</span>
+      <span class="stat-pill match"><b>${matchCount}</b> exact</span>
+      <span class="stat-pill conflict"><b>${conflictCount}</b> conflicts</span>
       <div class="filter-btns">
-        <button class="filter-btn active" id="fbtn-all"      onclick="setCompareView('all')">Todos</button>
-        <button class="filter-btn"        id="fbtn-new"      onclick="setCompareView('new')">Nuevos</button>
-        <button class="filter-btn"        id="fbtn-conflict" onclick="setCompareView('conflict')">Conflictos</button>
-        <button class="filter-btn"        id="fbtn-match"    onclick="setCompareView('match')">Exactos</button>
-        <button id="copy-filtered-btn" onclick="copyFiltered()" style="margin-left:8px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.35);color:var(--accent);font-family:var(--mono);font-size:10px;padding:3px 10px;border-radius:3px;cursor:pointer;letter-spacing:0.06em;transition:all 0.15s" onmouseover="this.style.background='rgba(251,191,36,0.2)'" onmouseout="this.style.background='rgba(251,191,36,0.1)'">⎘ Copiar vista</button>
+        <button class="filter-btn active" id="fbtn-all"      onclick="setCompareView('all')">All</button>
+        <button class="filter-btn"        id="fbtn-new"      onclick="setCompareView('new')">New</button>
+        <button class="filter-btn"        id="fbtn-conflict" onclick="setCompareView('conflict')">Conflicts</button>
+        <button class="filter-btn"        id="fbtn-match"    onclick="setCompareView('match')">Exact</button>
+        <button id="copy-filtered-btn" onclick="copyFiltered()" style="margin-left:8px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.35);color:var(--accent);font-family:var(--mono);font-size:10px;padding:3px 10px;border-radius:3px;cursor:pointer;letter-spacing:0.06em;transition:all 0.15s" onmouseover="this.style.background='rgba(251,191,36,0.2)'" onmouseout="this.style.background='rgba(251,191,36,0.1)'">⎘ Copy view</button>
       </div>
     </div>
     <div id="compare-table-wrap"></div>
@@ -612,12 +612,12 @@ function runCompare() {
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
       <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted2);display:flex;align-items:center;gap:7px">
         <span style="display:inline-block;width:5px;height:5px;background:var(--accent);border-radius:50%"></span>
-        Merge — original + nuevos + conflictos resueltos
+        Merge — original + new + conflicts resolved
       </div>
       <div style="margin-left:auto;display:flex;gap:8px">
-        <button onclick="runMerge()" style="background:var(--accent);color:#000;border:1px solid var(--accent);font-family:var(--mono);font-size:11px;font-weight:600;padding:5px 14px;border-radius:4px;cursor:pointer;letter-spacing:0.06em">⚡ Generar merge</button>
-        <button id="copy-merge-btn" onclick="copyMerge()" style="display:none;background:transparent;border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:5px 14px;border-radius:4px;cursor:pointer;letter-spacing:0.06em">⎘ Copiar</button>
-        <button id="copy-merge-flat-btn" onclick="copyMergeFlat()" style="display:none;background:transparent;border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:5px 14px;border-radius:4px;cursor:pointer;letter-spacing:0.06em">⎘ Sin [ ]</button>
+        <button onclick="runMerge()" style="background:var(--accent);color:#000;border:1px solid var(--accent);font-family:var(--mono);font-size:11px;font-weight:600;padding:5px 14px;border-radius:4px;cursor:pointer;letter-spacing:0.06em">⚡ Generate merge</button>
+        <button id="copy-merge-btn" onclick="copyMerge()" style="display:none;background:transparent;border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:5px 14px;border-radius:4px;cursor:pointer;letter-spacing:0.06em">⎘ Copy</button>
+        <button id="copy-merge-flat-btn" onclick="copyMergeFlat()" style="display:none;background:transparent;border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:5px 14px;border-radius:4px;cursor:pointer;letter-spacing:0.06em">⎘ No brackets</button>
       </div>
     </div>
     <div id="merge-stats" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"></div>
@@ -646,8 +646,8 @@ function copyFiltered() {
   navigator.clipboard.writeText(text).then(() => {
     const btn = document.getElementById('copy-filtered-btn');
     if (!btn) return;
-    btn.textContent = '✓ Copiado';
-    setTimeout(() => btn.textContent = '⎘ Copiar vista', 2000);
+    btn.textContent = '✓ Copied';
+    setTimeout(() => btn.textContent = '⎘ Copy view', 2000);
   });
 }
 
@@ -686,10 +686,10 @@ function runMerge() {
   const unchanged    = store[type].length - replaced;
 
   document.getElementById('merge-stats').innerHTML = [
-    `<span class="stat-pill"><b>${merged.length}</b> total en merge</span>`,
-    `<span class="stat-pill" style="color:var(--muted2)"><b>${unchanged}</b> sin cambio</span>`,
-    `<span class="stat-pill conflict"><b>${replaced}</b> reemplazados</span>`,
-    `<span class="stat-pill new"><b>${newAdded}</b> agregados</span>`,
+    `<span class="stat-pill"><b>${merged.length}</b> total in merge</span>`,
+    `<span class="stat-pill" style="color:var(--muted2)"><b>${unchanged}</b> unchanged</span>`,
+    `<span class="stat-pill conflict"><b>${replaced}</b> replaced</span>`,
+    `<span class="stat-pill new"><b>${newAdded}</b> added</span>`,
   ].join('');
 
   const out = document.getElementById('merge-output');
@@ -704,8 +704,8 @@ function copyMerge() {
   if (!_mergedArray) return;
   navigator.clipboard.writeText(JSON.stringify(_mergedArray, null, 2)).then(() => {
     const btn = document.getElementById('copy-merge-btn');
-    btn.textContent = '✓ Copiado';
-    setTimeout(() => btn.textContent = '⎘ Copiar', 2000);
+    btn.textContent = '✓ Copied';
+    setTimeout(() => btn.textContent = '⎘ Copy', 2000);
   });
 }
 
@@ -713,8 +713,8 @@ function copyMergeFlat() {
   if (!_mergedArray) return;
   navigator.clipboard.writeText(_mergedArray.map(o => JSON.stringify(o, null, 2)).join(',\n')).then(() => {
     const btn = document.getElementById('copy-merge-flat-btn');
-    btn.textContent = '✓ Copiado';
-    setTimeout(() => btn.textContent = '⎘ Sin [ ]', 2000);
+    btn.textContent = '✓ Copied';
+    setTimeout(() => btn.textContent = '⎘ No brackets', 2000);
   });
 }
 
@@ -726,7 +726,7 @@ function renderCompareTable(view) {
   if (!wrap) return;
 
   if (!filtered.length) {
-    wrap.innerHTML = '<div class="empty-msg">Sin resultados en esta categoría.</div>';
+    wrap.innerHTML = '<div class="empty-msg">No results in this category.</div>';
     return;
   }
 
@@ -743,9 +743,9 @@ function renderCompareTable(view) {
       detailHtml = r.diffs.map(f => `
         <div style="margin-top:4px;font-size:11px">
           <span style="color:var(--muted2);font-family:var(--mono)">${f}:</span>
-          <span class="diff-old">${r.existing[f]??'(vacío)'}</span>
+          <span class="diff-old">${r.existing[f]??'(empty)'}</span>
           <span style="color:var(--muted2);margin:0 4px">→</span>
-          <span class="diff-new">${rec[f]??'(vacío)'}</span>
+          <span class="diff-new">${rec[f]??'(empty)'}</span>
         </div>`).join('');
     }
 

@@ -42,12 +42,12 @@
 
   label { display: block; font-size: 11px; font-weight: 500; color: var(--muted2); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
 
-  input[type="text"], textarea {
+  input[type="text"], textarea, select {
     width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text);
     font-family: var(--mono); font-size: 13px; padding: 7px 11px; border-radius: 4px; outline: none;
     transition: border-color 0.15s; text-transform: none;
   }
-  input[type="text"]:focus, textarea:focus { border-color: var(--accent); }
+  input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--accent); }
   input::placeholder, textarea::placeholder { color: var(--muted); }
   textarea { resize: vertical; line-height: 1.6; }
 
@@ -170,7 +170,7 @@
     <!-- BRAND -->
     <div>
       <div class="section-title">Brand</div>
-      <select id="inBrand" style="width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:13px;padding:7px 11px;border-radius:4px;outline:none;text-transform:none">
+      <select id="inBrand">
         <option value="">— Select brand —</option>
         <option value="GMC">GMC</option>
         <option value="Chevrolet">Chevrolet</option>
@@ -226,19 +226,20 @@
 
       <!-- MMC filter for this trim pair -->
       <div style="margin-bottom:10px">
-        <label>Aplica a MMCs</label>
-        <select id="inTrimFilterMode" onchange="renderTrimFilterMMCs()" style="margin-bottom:6px">
-          <option value="all">Todos los MMCs</option>
-          <option value="only">Solo para algunos</option>
-          <option value="exclude">Excluir de algunos</option>
+        <label>Applies to MMCs</label>
+        <select id="inTrimFilterMode" onchange="renderTrimFilterMMCs()">
+          <option value="all">All MMCs</option>
+          <option value="only">Only specific MMCs</option>
+          <option value="exclude">Exclude specific MMCs</option>
         </select>
         <div id="trimFilterMMCsWrap" style="display:none">
-          <div id="trimFilterMMCsList" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px"></div>
+          <div style="font-size:10px;color:var(--muted2);font-family:var(--mono);margin-bottom:5px;letter-spacing:0.06em;text-transform:uppercase" id="trimFilterMMCsLabel">Select MMCs</div>
+          <div id="trimFilterMMCsList" style="display:flex;flex-wrap:wrap;gap:5px"></div>
         </div>
       </div>
 
       <div class="hint">
-        Bulk — una por línea. Filtro MMC opcional al final:<br>
+        Bulk — one per line. Optional MMC filter at the end:<br>
         <code style="color:var(--accent2)">3SA SLE</code> → todos<br>
         <code style="color:var(--accent2)">3SA SLE only:TC10543,TK10906</code> → solo esos<br>
         <code style="color:var(--accent2)">3SA SLE excl:TK10906</code> → excluir ese
@@ -376,21 +377,42 @@ function renderList(key) {
 }
 
 // ── Trim MMC filter UI ─────────────────────────────────────────────────────
+// Track selected MMCs as a Set for toggle chips
+const _selectedFilterMMCs = new Set();
+
 function renderTrimFilterMMCs() {
   const mode = document.getElementById('inTrimFilterMode').value;
   const wrap = document.getElementById('trimFilterMMCsWrap');
-  const list = document.getElementById('trimFilterMMCsList');
-  if (mode === 'all') { wrap.style.display = 'none'; return; }
+  if (mode === 'all') { wrap.style.display = 'none'; _selectedFilterMMCs.clear(); return; }
+  _selectedFilterMMCs.clear();
   wrap.style.display = 'block';
-  list.innerHTML = state.mmcs.map(mmc =>
-    `<label style="display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:12px;background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:3px 8px;cursor:pointer">
-      <input type="checkbox" value="${mmc}" style="width:auto;margin:0;padding:0"> ${mmc}
-    </label>`
-  ).join('');
+  document.getElementById('trimFilterMMCsLabel').textContent =
+    mode === 'only' ? 'Include only:' : 'Exclude:';
+  renderFilterChips();
+}
+
+function renderFilterChips() {
+  const list = document.getElementById('trimFilterMMCsList');
+  list.innerHTML = state.mmcs.map(mmc => {
+    const selected = _selectedFilterMMCs.has(mmc);
+    return `<span onclick="toggleFilterMMC('${mmc}')" style="
+      display:inline-flex;align-items:center;font-family:var(--mono);font-size:12px;
+      border-radius:3px;padding:3px 9px;cursor:pointer;transition:all 0.13s;
+      ${selected
+        ? 'background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.5);color:var(--accent)'
+        : 'background:var(--surface2);border:1px solid var(--border2);color:var(--muted2)'}
+    ">${mmc}</span>`;
+  }).join('');
+}
+
+function toggleFilterMMC(mmc) {
+  if (_selectedFilterMMCs.has(mmc)) _selectedFilterMMCs.delete(mmc);
+  else _selectedFilterMMCs.add(mmc);
+  renderFilterChips();
 }
 
 function getSelectedFilterMMCs() {
-  return [...document.querySelectorAll('#trimFilterMMCsList input:checked')].map(el => el.value);
+  return [..._selectedFilterMMCs];
 }
 
 function trimAppliesTo(pair, mmc) {
@@ -426,6 +448,7 @@ function addPair() {
   document.getElementById('inTrim').value = '';
   document.getElementById('inTrimText').value = '';
   document.getElementById('inTrimFilterMode').value = 'all';
+  _selectedFilterMMCs.clear();
   renderTrimFilterMMCs();
   document.getElementById('inTrim').focus();
   renderPairList();
@@ -461,7 +484,7 @@ function generate() {
   const brandVal = document.getElementById('inBrand').value;
   const { years, mmcs, pairs } = state;
   if (!brandVal || !years.length || !mmcs.length || !pairs.length) {
-    alert('Selecciona una marca y completa Year, MMC y al menos un par de Trim.');
+    alert('Select a brand and fill in Year, MMC and at least one Trim pair.');
     return;
   }
   const combos = [];

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -237,7 +237,7 @@
 
     <!-- BASE CONFIG -->
     <div>
-      <div class="section-title">Configuración base</div>
+      <div class="section-title">Base Config</div>
       <div style="margin-bottom:12px">
         <label>Base URL</label>
         <input type="text" id="baseUrl" value="https://rapmue1gmdev-wapp02.azurewebsites.net" style="font-size:12px">
@@ -252,7 +252,7 @@
           <input type="text" id="brand" value="cadillac" oninput="updatePreview()">
         </div>
         <div style="margin-bottom:12px">
-          <label>Año</label>
+          <label>Year</label>
           <input type="text" id="year" value="2026" oninput="updatePreview()">
         </div>
         <div style="margin-bottom:12px">
@@ -277,7 +277,7 @@
         <button class="btn btn-sm" onclick="bulkAdd('modelCodes','newModelCode','modelCodeList')">+ Add</button>
       </div>
       <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px">
-        <span style="font-family:var(--mono);font-size:10px;color:var(--muted2)" id="modelCodesCount">0 códigos</span>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--muted2)" id="modelCodesCount">0 codes</span>
         <button class="tag-clear" onclick="clearAll('modelCodes','modelCodeList')">limpiar</button>
       </div>
       <div class="tag-list" id="modelCodeList"></div>
@@ -350,7 +350,7 @@
     </div>
 
     <div id="resultsContainer">
-      <div class="empty-state">Configura los parámetros<br>y presiona Verificar</div>
+      <div class="empty-state">Configure the parameters<br>and press Verify</div>
     </div>
 
     <!-- SUMMARY PANEL -->
@@ -381,7 +381,7 @@ let results = [], activeFilter = 'all', running = false, shouldStop = false;
 let summaryOpen = false;
 
 const countLabels = { modelCodes: 'modelCodesCount', trims: 'trimsCount', extColors: 'extColorsCount' };
-const countSuffix = { modelCodes: 'códigos', trims: 'trims', extColors: 'colores' };
+const countSuffix = { modelCodes: 'codes', trims: 'trims', extColors: 'colors' };
 const listIds = { modelCodes: 'modelCodeList', trims: 'trimList', extColors: 'extColorList' };
 
 // ─── BULK ADD ────────────────────────────────────────────────────────────────
@@ -514,7 +514,7 @@ async function startCheck() {
     document.getElementById('exportPairsBtn').style.display = 'inline-flex';
     const okCount = results.filter(r => r.status === 'ok').length;
     const banner = document.getElementById('generatorBanner');
-    document.getElementById('bannerMsg').textContent = `✓ ${okCount} combinaciones OK encontradas — ¿cargarlas en el JSON Generator?`;
+    document.getElementById('bannerMsg').textContent = `✓ ${okCount} valid combinations found — load them into the JSON Generator?`;
     banner.style.display = 'flex';
   }
 }
@@ -561,7 +561,7 @@ function rowHtml(r, i) {
 }
 function renderTable() {
   const c = document.getElementById('resultsContainer');
-  if (!results.length) { c.innerHTML=`<div class="empty-state">Configura los parámetros<br>y presiona Verificar</div>`; return; }
+  if (!results.length) { c.innerHTML=`<div class="empty-state">Configure the parameters<br>and press Verify</div>`; return; }
   c.innerHTML = `<table class="results-table"><thead><tr><th></th><th>Model Code</th><th>Trim</th><th>Ext. Color</th><th>Estado</th><th>URL</th></tr></thead><tbody>${results.map((r,i)=>rowHtml(r,i)).join('')}</tbody></table>`;
 }
 function updateRowStatus(i) {
@@ -618,9 +618,9 @@ function renderSummary() {
   const okCount = results.filter(r=>r.status==='ok').length;
   const content = document.getElementById('summaryContent');
 
-  if (!okCount) { content.innerHTML = `<div style="color:var(--muted);font-family:var(--mono);font-size:12px">No hay combinaciones OK aún.</div>`; return; }
+  if (!okCount) { content.innerHTML = `<div style="color:var(--muted);font-family:var(--mono);font-size:12px">No valid combinations yet.</div>`; return; }
 
-  let html = `<div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-bottom:14px">${okCount} combinación${okCount!==1?'es':''} con imagen real</div>`;
+  let html = `<div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-bottom:14px">${okCount} combination${okCount!==1?'s':''} with real image</div>`;
 
   for (const mc of Object.keys(grouped).sort()) {
     html += `<div class="summary-group">`;
