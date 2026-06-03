@@ -208,7 +208,7 @@
   <div class="logo">GM <span>//</span> Image Checker</div>
   <div class="header-stats" style="align-items:center">
     <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-family:var(--mono);font-size:11px;color:var(--muted2)">Paralelo</span>
+      <span style="font-family:var(--mono);font-size:11px;color:var(--muted2)">Parallel</span>
       <input type="range" id="concurrency" min="1" max="20" value="8" style="width:80px;accent-color:var(--accent)" oninput="document.getElementById('concVal').textContent=this.value">
       <span style="font-family:var(--mono);font-size:12px;color:var(--accent);min-width:16px" id="concVal">8</span>
     </div>
@@ -220,14 +220,14 @@
     <span>Total: <b id="statTotal">0</b></span>
     <span class="stat-ok">✓ OK: <b id="statOk">0</b></span>
     <span class="stat-bad">✗ 2×2: <b id="statBad">0</b></span>
-    <span class="stat-pending">⏳ Pendiente: <b id="statPending">0</b></span>
+    <span class="stat-pending">⏳ Pending: <b id="statPending">0</b></span>
   </div>
 </header>
 
 <div id="generatorBanner" style="display:none;background:rgba(200,255,0,0.08);border-bottom:1px solid rgba(200,255,0,0.2);padding:10px 24px;display:none;align-items:center;gap:14px;flex-wrap:wrap">
   <span style="font-family:var(--mono);font-size:12px;color:var(--accent)" id="bannerMsg"></span>
   <div style="display:flex;gap:8px;margin-left:auto">
-    <button onclick="sendToGenerator()" style="font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;background:var(--accent);color:#000;border:none;border-radius:4px;padding:6px 14px;cursor:pointer">Cargar en Generator →</button>
+    <button onclick="sendToGenerator()" style="font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;background:var(--accent);color:#000;border:none;border-radius:4px;padding:6px 14px;cursor:pointer">Load into Generator →</button>
     <button onclick="document.getElementById('generatorBanner').style.display='none'" style="font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;background:transparent;color:var(--muted);border:1px solid var(--border2);border-radius:4px;padding:6px 10px;cursor:pointer">✕</button>
   </div>
 </div>
@@ -248,7 +248,7 @@
           <input type="text" id="bodyType" value="sedan">
         </div>
         <div style="margin-bottom:12px">
-          <label>Marca</label>
+          <label>Brand</label>
           <input type="text" id="brand" value="cadillac" oninput="updatePreview()">
         </div>
         <div style="margin-bottom:12px">
@@ -256,7 +256,7 @@
           <input type="text" id="year" value="2026" oninput="updatePreview()">
         </div>
         <div style="margin-bottom:12px">
-          <label>Ángulo (deg##)</label>
+          <label>Angle (deg##)</label>
           <input type="text" id="angle" value="deg01">
         </div>
         <div style="margin-bottom:12px">
@@ -264,21 +264,21 @@
           <input type="text" id="filename" value="gmds10.png">
         </div>
       </div>
-      <div class="section-title" style="margin-top:4px">URL generada</div>
+      <div class="section-title" style="margin-top:4px">Generated URL</div>
       <div class="url-preview" id="urlPreview">—</div>
     </div>
 
     <!-- MODEL CODES -->
     <div>
       <div class="section-title">Model Codes</div>
-      <div class="bulk-hint">Separados por coma, espacio o Enter</div>
+      <div class="bulk-hint">Comma, space or Enter separated</div>
       <div class="bulk-row">
         <textarea id="newModelCode" placeholder="6MP26, 6MP48, 6MC26" rows="2"></textarea>
         <button class="btn btn-sm" onclick="bulkAdd('modelCodes','newModelCode','modelCodeList')">+ Add</button>
       </div>
       <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px">
         <span style="font-family:var(--mono);font-size:10px;color:var(--muted2)" id="modelCodesCount">0 codes</span>
-        <button class="tag-clear" onclick="clearAll('modelCodes','modelCodeList')">limpiar</button>
+        <button class="tag-clear" onclick="clearAll('modelCodes','modelCodeList')">clear</button>
       </div>
       <div class="tag-list" id="modelCodeList"></div>
     </div>
@@ -286,14 +286,14 @@
     <!-- TRIMS -->
     <div>
       <div class="section-title">Trims</div>
-      <div class="bulk-hint">Separados por coma, espacio o Enter</div>
+      <div class="bulk-hint">Comma, space or Enter separated</div>
       <div class="bulk-row">
         <textarea id="newTrim" placeholder="1SC, 2SC, 3SC" rows="2"></textarea>
         <button class="btn btn-sm" onclick="bulkAdd('trims','newTrim','trimList')">+ Add</button>
       </div>
       <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px">
         <span style="font-family:var(--mono);font-size:10px;color:var(--muted2)" id="trimsCount">0 trims</span>
-        <button class="tag-clear" onclick="clearAll('trims','trimList')">limpiar</button>
+        <button class="tag-clear" onclick="clearAll('trims','trimList')">clear</button>
       </div>
       <div class="tag-list" id="trimList"></div>
     </div>
@@ -301,14 +301,14 @@
     <!-- EXTERIOR COLORS -->
     <div>
       <div class="section-title">Exterior Colors</div>
-      <div class="bulk-hint">Separados por coma, espacio o Enter</div>
+      <div class="bulk-hint">Comma, space or Enter separated</div>
       <div class="bulk-row">
         <textarea id="newExtColor" placeholder="GBA, GBT, GAZ, G49" rows="2"></textarea>
         <button class="btn btn-sm" onclick="bulkAdd('extColors','newExtColor','extColorList')">+ Add</button>
       </div>
       <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px">
-        <span style="font-family:var(--mono);font-size:10px;color:var(--muted2)" id="extColorsCount">0 colores</span>
-        <button class="tag-clear" onclick="clearAll('extColors','extColorList')">limpiar</button>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--muted2)" id="extColorsCount">0 colors</span>
+        <button class="tag-clear" onclick="clearAll('extColors','extColorList')">clear</button>
       </div>
       <div class="tag-list" id="extColorList"></div>
     </div>
@@ -318,9 +318,9 @@
     <!-- RUN -->
     <div>
       <div class="run-row">
-        <button class="btn btn-accent" id="runBtn" onclick="startCheck()">▶ Verificar</button>
-        <button class="btn btn-stop" id="stopBtn" onclick="stopCheck()" style="display:none">■ Detener</button>
-        <button class="btn btn-sm" onclick="clearResults()">↺ Limpiar</button>
+        <button class="btn btn-accent" id="runBtn" onclick="startCheck()">▶ Verify</button>
+        <button class="btn btn-stop" id="stopBtn" onclick="stopCheck()" style="display:none">■ Stop</button>
+        <button class="btn btn-sm" onclick="clearResults()">↺ Clear</button>
       </div>
       <div class="progress-wrap" id="progressWrap">
         <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
@@ -334,17 +334,17 @@
   <div class="main">
     <div class="results-header">
       <div class="filter-tabs">
-        <button class="tab active" onclick="setFilter('all',this)">Todos</button>
+        <button class="tab active" onclick="setFilter('all',this)">All</button>
         <button class="tab" onclick="setFilter('ok',this)">✓ OK</button>
         <button class="tab" onclick="setFilter('bad',this)">✗ 2×2</button>
         <button class="tab" onclick="setFilter('error',this)">Error</button>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button class="btn btn-summary btn-sm" id="summaryBtn" onclick="toggleSummary()" style="display:none">◈ Ver combinaciones OK</button>
+        <button class="btn btn-summary btn-sm" id="summaryBtn" onclick="toggleSummary()" style="display:none">◈ View valid combinations</button>
         <div class="export-row">
           <button class="btn btn-sm" onclick="exportCSV()">↓ CSV</button>
           <button class="btn btn-sm" onclick="exportJSON()">↓ JSON</button>
-          <button class="btn btn-sm" id="exportPairsBtn" onclick="exportPairs()" style="display:none">↓ Pares OK</button>
+          <button class="btn btn-sm" id="exportPairsBtn" onclick="exportPairs()" style="display:none">↓ OK Pairs</button>
         </div>
       </div>
     </div>
@@ -356,13 +356,13 @@
     <!-- SUMMARY PANEL -->
     <div class="summary-panel" id="summaryPanel">
       <div class="summary-header">
-        <div class="summary-title">◈ Combinaciones que funcionan</div>
-        <button class="summary-close" onclick="toggleSummary()">× Cerrar</button>
+        <div class="summary-title">◈ Valid combinations</div>
+        <button class="summary-close" onclick="toggleSummary()">× Close</button>
       </div>
       <div id="summaryContent"></div>
       <div class="summary-actions">
-        <button class="btn btn-sm" onclick="copySummaryText()">⎘ Copiar como texto</button>
-        <button class="btn btn-sm" onclick="downloadSummaryJSON()">↓ JSON combinaciones</button>
+        <button class="btn btn-sm" onclick="copySummaryText()">⎘ Copy as text</button>
+        <button class="btn btn-sm" onclick="downloadSummaryJSON()">↓ JSON combinations</button>
       </div>
     </div>
   </div>
@@ -372,7 +372,7 @@
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <img id="lightboxImg" src="" alt="">
   <div class="lightbox-label" id="lightboxLabel"></div>
-  <div class="lightbox-close">Click para cerrar</div>
+  <div class="lightbox-close">Click to close</div>
 </div>
 
 <script>
@@ -477,7 +477,7 @@ async function startCheck() {
   const combos = [];
   for (const mc of state.modelCodes) for (const tr of state.trims) for (const ec of state.extColors)
     combos.push({ mc, tr, ec, url: buildUrl(mc, tr, ec) });
-  if (!combos.length) { alert('Agrega al menos un valor en cada lista.'); return; }
+  if (!combos.length) { alert('Add at least one value to each list.'); return; }
 
   results = combos.map(c => ({...c, status:'loading', w:0, h:0}));
   running = true; shouldStop = false;
@@ -648,7 +648,7 @@ function copySummaryText() {
     }
   }
   navigator.clipboard.writeText(lines.join('\n')).then(() => {
-    const btn = event.target; btn.textContent='✓ Copiado'; setTimeout(()=>btn.textContent='⎘ Copiar como texto',2000);
+    const btn = event.target; btn.textContent='✓ Copied'; setTimeout(()=>btn.textContent='⎘ Copy as text',2000);
   });
 }
 
@@ -663,7 +663,7 @@ function downloadSummaryJSON() {
   }));
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
   const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download='combinaciones-ok.json'; a.click();
+  a.download='combinations-ok.json'; a.click();
 }
 
 // ─── LIGHTBOX ────────────────────────────────────────────────────────────────
@@ -693,7 +693,7 @@ function exportPairs() {
   navigator.clipboard.writeText(lines).then(() => {
     const btn = document.getElementById('exportPairsBtn');
     const orig = btn.textContent;
-    btn.textContent = '✓ Copiado';
+    btn.textContent = '✓ Copied';
     setTimeout(() => btn.textContent = orig, 2000);
   });
 }
