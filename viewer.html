@@ -529,11 +529,14 @@ function renderTable(title, headers, rows, rowFn) {
 }
 
 // ── COMPARE ─────────────────────────────────────────────────────────────────
-let compareView = 'all';
+// Store results in module-level vars so filter buttons don't need to pass data via attributes
+let _compareResults = [];
+let _compareSchema  = null;
 
 function clearCompareResults() {
   document.getElementById('compare-results').innerHTML = '';
-  compareView = 'all';
+  _compareResults = [];
+  _compareSchema  = null;
 }
 
 function makeKey(obj, keyFields) {
@@ -570,51 +573,47 @@ function runCompare() {
     const key = makeKey(r, s.keyFields);
     if (!existingIndex[key]) return { status: 'new', record: r, existing: null };
     const ex = existingIndex[key];
-    // Check value fields
     const diffs = s.valueFields.filter(f => str(r[f]).trim() !== str(ex[f]).trim());
-    if (diffs.length > 0) {
-      return { status: 'conflict', record: r, existing: ex, diffs };
-    }
+    if (diffs.length > 0) return { status: 'conflict', record: r, existing: ex, diffs };
     return { status: 'match', record: r, existing: ex };
   });
+
+  _compareResults = results;
+  _compareSchema  = s;
 
   const newCount      = results.filter(r => r.status === 'new').length;
   const matchCount    = results.filter(r => r.status === 'match').length;
   const conflictCount = results.filter(r => r.status === 'conflict').length;
 
-  renderCompareResults(results, s, newCount, matchCount, conflictCount);
-}
-
-function renderCompareResults(results, s, newCount, matchCount, conflictCount) {
-  compareView = 'all';
   const container = document.getElementById('compare-results');
-
-  const headerHtml = `
+  container.innerHTML = `
     <div class="results-header">
       <span class="stat-pill"><b>${results.length}</b> total</span>
       <span class="stat-pill new"><b>${newCount}</b> nuevos</span>
       <span class="stat-pill match"><b>${matchCount}</b> exactos</span>
       <span class="stat-pill conflict"><b>${conflictCount}</b> conflictos</span>
       <div class="filter-btns">
-        <button class="filter-btn active" id="fbtn-all"      onclick="setCompareView('all',      arguments[0], ${JSON.stringify(results).replace(/</g,'\\u003c')}, ${JSON.stringify(s).replace(/</g,'\\u003c')})">Todos</button>
-        <button class="filter-btn"        id="fbtn-new"      onclick="setCompareView('new',      arguments[0], ${JSON.stringify(results).replace(/</g,'\\u003c')}, ${JSON.stringify(s).replace(/</g,'\\u003c')})">Nuevos</button>
-        <button class="filter-btn"        id="fbtn-conflict" onclick="setCompareView('conflict', arguments[0], ${JSON.stringify(results).replace(/</g,'\\u003c')}, ${JSON.stringify(s).replace(/</g,'\\u003c')})">Conflictos</button>
-        <button class="filter-btn"        id="fbtn-match"    onclick="setCompareView('match',    arguments[0], ${JSON.stringify(results).replace(/</g,'\\u003c')}, ${JSON.stringify(s).replace(/</g,'\\u003c')})">Exactos</button>
+        <button class="filter-btn active" id="fbtn-all"      onclick="setCompareView('all')">Todos</button>
+        <button class="filter-btn"        id="fbtn-new"      onclick="setCompareView('new')">Nuevos</button>
+        <button class="filter-btn"        id="fbtn-conflict" onclick="setCompareView('conflict')">Conflictos</button>
+        <button class="filter-btn"        id="fbtn-match"    onclick="setCompareView('match')">Exactos</button>
       </div>
     </div>
     <div id="compare-table-wrap"></div>
   `;
-  container.innerHTML = headerHtml;
-  renderCompareTable(results, s, 'all');
+  renderCompareTable('all');
 }
 
-function setCompareView(view, e, results, s) {
+function setCompareView(view) {
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  e.target.classList.add('active');
-  renderCompareTable(results, s, view);
+  const btn = document.getElementById(`fbtn-${view}`);
+  if (btn) btn.classList.add('active');
+  renderCompareTable(view);
 }
 
-function renderCompareTable(results, s, view) {
+function renderCompareTable(view) {
+  const results = _compareResults;
+  const s       = _compareSchema;
   const filtered = view === 'all' ? results : results.filter(r => r.status === view);
   const wrap = document.getElementById('compare-table-wrap');
   if (!wrap) return;
