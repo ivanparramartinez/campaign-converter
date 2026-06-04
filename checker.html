@@ -59,6 +59,7 @@
   }
   .url-preview .seg { color: var(--accent2); }
   .url-preview .seg-var { color: var(--accent); }
+  .url-preview .seg-int { color: #c084fc; }
 
   /* BULK INPUT */
   .bulk-section { margin-bottom: 6px; }
@@ -98,10 +99,35 @@
 
   .run-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
-  .concurrency-row { display: flex; align-items: center; gap: 10px; }
-  .concurrency-row label { margin-bottom: 0; white-space: nowrap; }
-  input[type="range"] { flex: 1; accent-color: var(--accent); }
-  .conc-val { font-family: var(--mono); font-size: 12px; color: var(--accent); min-width: 20px; }
+  /* INTERIOR TOGGLE */
+  .int-toggle-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 11px; border-radius: 4px; cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    transition: border-color 0.15s, background 0.15s;
+    user-select: none;
+  }
+  .int-toggle-row:hover { border-color: #c084fc; }
+  .int-toggle-row.enabled { border-color: rgba(192,132,252,0.45); background: rgba(192,132,252,0.06); }
+  .int-toggle-switch {
+    width: 32px; height: 18px; border-radius: 9px; border: 1px solid var(--border2);
+    background: var(--surface2); position: relative; flex-shrink: 0; transition: background 0.2s, border-color 0.2s;
+  }
+  .int-toggle-switch::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--muted); transition: left 0.2s, background 0.2s;
+  }
+  .int-toggle-row.enabled .int-toggle-switch { background: rgba(192,132,252,0.25); border-color: #c084fc; }
+  .int-toggle-row.enabled .int-toggle-switch::after { left: 16px; background: #c084fc; }
+  .int-toggle-label { font-family: var(--mono); font-size: 11px; color: var(--muted2); letter-spacing: 0.08em; text-transform: uppercase; }
+  .int-toggle-row.enabled .int-toggle-label { color: #c084fc; }
+  .int-toggle-hint { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-left: auto; }
+
+  /* Interior section collapsed/expanded */
+  .int-section { overflow: hidden; transition: max-height 0.25s ease, opacity 0.2s; max-height: 0; opacity: 0; }
+  .int-section.open { max-height: 400px; opacity: 1; }
 
   .progress-wrap { display: none; margin-top: 10px; }
   .progress-bar-bg { background: var(--surface2); border-radius: 2px; height: 3px; overflow: hidden; }
@@ -205,7 +231,6 @@
   <a href="viewer.html" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:4px 10px;border-radius:3px;transition:color 0.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Viewer</a>
 </div>
 
-
 <header>
   <div class="logo">GM <span>//</span> Image Checker</div>
   <div class="header-stats" style="align-items:center">
@@ -226,13 +251,14 @@
   </div>
 </header>
 
-<div id="generatorBanner" style="display:none;background:rgba(200,255,0,0.08);border-bottom:1px solid rgba(200,255,0,0.2);padding:10px 24px;display:none;align-items:center;gap:14px;flex-wrap:wrap">
+<div id="generatorBanner" style="display:none;background:rgba(200,255,0,0.08);border-bottom:1px solid rgba(200,255,0,0.2);padding:10px 24px;align-items:center;gap:14px;flex-wrap:wrap">
   <span style="font-family:var(--mono);font-size:12px;color:var(--accent)" id="bannerMsg"></span>
   <div style="display:flex;gap:8px;margin-left:auto">
     <button onclick="sendToGenerator()" style="font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;background:var(--accent);color:#000;border:none;border-radius:4px;padding:6px 14px;cursor:pointer">Load into Generator →</button>
     <button onclick="document.getElementById('generatorBanner').style.display='none'" style="font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;background:transparent;color:var(--muted);border:1px solid var(--border2);border-radius:4px;padding:6px 10px;cursor:pointer">✕</button>
   </div>
 </div>
+
 <div class="layout">
 
   <div class="sidebar">
@@ -315,7 +341,35 @@
       <div class="tag-list" id="extColorList"></div>
     </div>
 
+    <!-- INTERIOR COLORS (optional) -->
+    <div>
+      <!-- Toggle row -->
+      <div class="int-toggle-row" id="intToggleRow" onclick="toggleInterior()">
+        <div class="int-toggle-switch" id="intToggleSwitch"></div>
+        <span class="int-toggle-label">Interior Colors</span>
+        <span class="int-toggle-hint" id="intToggleHint">off</span>
+      </div>
 
+      <!-- Collapsible content -->
+      <div class="int-section" id="intSection">
+        <div style="padding-top:10px">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:7px;line-height:1.6">
+            When enabled, URL uses <span style="color:#c084fc">ext__int__angle</span> pattern:<br>
+            <span style="color:var(--muted2)">…/GBA__H7D__deg01/gmds10.png</span>
+          </div>
+          <div class="bulk-hint">Comma, space or Enter separated</div>
+          <div class="bulk-row">
+            <textarea id="newIntColor" placeholder="H7D, H2G, HVE" rows="2"></textarea>
+            <button class="btn btn-sm" onclick="bulkAdd('intColors','newIntColor','intColorList')">+ Add</button>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px">
+            <span style="font-family:var(--mono);font-size:10px;color:#c084fc" id="intColorsCount">0 colors</span>
+            <button class="tag-clear" onclick="clearAll('intColors','intColorList')" style="border-color:rgba(192,132,252,0.3);color:#c084fc" onmouseover="this.style.borderColor='#c084fc'" onmouseout="this.style.borderColor='rgba(192,132,252,0.3)'">clear</button>
+          </div>
+          <div class="tag-list" id="intColorList"></div>
+        </div>
+      </div>
+    </div>
 
     <!-- RUN -->
     <div>
@@ -378,13 +432,32 @@
 </div>
 
 <script>
-const state = { modelCodes: [], trims: [], extColors: [] };
+const state = { modelCodes: [], trims: [], extColors: [], intColors: [] };
 let results = [], activeFilter = 'all', running = false, shouldStop = false;
 let summaryOpen = false;
+let useInterior = false; // toggle state
 
-const countLabels = { modelCodes: 'modelCodesCount', trims: 'trimsCount', extColors: 'extColorsCount' };
-const countSuffix = { modelCodes: 'codes', trims: 'trims', extColors: 'colors' };
-const listIds = { modelCodes: 'modelCodeList', trims: 'trimList', extColors: 'extColorList' };
+const countLabels = { modelCodes: 'modelCodesCount', trims: 'trimsCount', extColors: 'extColorsCount', intColors: 'intColorsCount' };
+const countSuffix = { modelCodes: 'codes', trims: 'trims', extColors: 'colors', intColors: 'colors' };
+const listIds     = { modelCodes: 'modelCodeList', trims: 'trimList', extColors: 'extColorList', intColors: 'intColorList' };
+
+// ─── INTERIOR TOGGLE ─────────────────────────────────────────────────────────
+function toggleInterior() {
+  useInterior = !useInterior;
+  const row     = document.getElementById('intToggleRow');
+  const section = document.getElementById('intSection');
+  const hint    = document.getElementById('intToggleHint');
+  if (useInterior) {
+    row.classList.add('enabled');
+    section.classList.add('open');
+    hint.textContent = 'on';
+  } else {
+    row.classList.remove('enabled');
+    section.classList.remove('open');
+    hint.textContent = 'off';
+  }
+  updatePreview();
+}
 
 // ─── BULK ADD ────────────────────────────────────────────────────────────────
 function parseBulkInput(raw) {
@@ -411,8 +484,9 @@ function removeTag(key, i, listId) {
 
 function renderTags(key, listId) {
   const el = document.getElementById(listId);
+  const isInt = key === 'intColors';
   el.innerHTML = state[key].map((v, i) =>
-    `<span class="tag">${v}<span class="del" onclick="removeTag('${key}',${i},'${listId}')">×</span></span>`
+    `<span class="tag" style="${isInt ? 'background:rgba(192,132,252,0.08);border-color:rgba(192,132,252,0.25);color:#c084fc' : ''}">${v}<span class="del" onclick="removeTag('${key}',${i},'${listId}')">×</span></span>`
   ).join('');
   const cnt = document.getElementById(countLabels[key]);
   if (cnt) cnt.textContent = `${state[key].length} ${countSuffix[key]}`;
@@ -420,40 +494,60 @@ function renderTags(key, listId) {
 }
 
 // Enter key to submit textareas
-[['newModelCode','modelCodes','modelCodeList'],['newTrim','trims','trimList'],['newExtColor','extColors','extColorList']].forEach(([id,key,listId]) => {
-  document.getElementById(id).addEventListener('keydown', e => {
+[
+  ['newModelCode','modelCodes','modelCodeList'],
+  ['newTrim','trims','trimList'],
+  ['newExtColor','extColors','extColorList'],
+  ['newIntColor','intColors','intColorList'],
+].forEach(([id,key,listId]) => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); bulkAdd(key, id, listId); }
   });
 });
 
-// ─── URL PREVIEW ─────────────────────────────────────────────────────────────
-function buildUrl(mc, tr, ec) {
-  const base = document.getElementById('baseUrl').value.trim().replace(/\/$/, '');
-  const body = document.getElementById('bodyType').value.trim();
+// ─── URL BUILDING ─────────────────────────────────────────────────────────────
+// Without interior: …/extColor_angle/filename
+// With interior:    …/extColor__intColor__angle/filename
+function buildUrl(mc, tr, ec, ic) {
+  const base  = document.getElementById('baseUrl').value.trim().replace(/\/$/, '');
+  const body  = document.getElementById('bodyType').value.trim();
   const brand = document.getElementById('brand').value.trim();
-  const year = document.getElementById('year').value.trim();
+  const yr    = document.getElementById('year').value.trim();
   const angle = document.getElementById('angle').value.trim();
-  const file = document.getElementById('filename').value.trim();
-  return `${base}/images/exterior/${body}/${brand}/${year}/${mc}/${tr}/${ec}_${angle}/${file}`;
+  const file  = document.getElementById('filename').value.trim();
+
+  const colorPart = (useInterior && ic)
+    ? `${ec}__${ic}__${angle}`
+    : `${ec}_${angle}`;
+
+  return `${base}/images/exterior/${body}/${brand}/${yr}/${mc}/${tr}/${colorPart}/${file}`;
 }
 
 function updatePreview() {
-  const mc = state.modelCodes[0] || '{modelCode}';
-  const tr = state.trims[0] || '{trim}';
-  const ec = state.extColors[0] || '{extColor}';
-  const base = document.getElementById('baseUrl').value.trim().replace(/\/$/, '');
-  const body = document.getElementById('bodyType').value.trim();
+  const mc    = state.modelCodes[0] || '{modelCode}';
+  const tr    = state.trims[0]      || '{trim}';
+  const ec    = state.extColors[0]  || '{extColor}';
+  const ic    = state.intColors[0]  || '{intColor}';
+  const base  = document.getElementById('baseUrl').value.trim().replace(/\/$/, '');
+  const body  = document.getElementById('bodyType').value.trim();
   const brand = document.getElementById('brand').value.trim();
-  const year = document.getElementById('year').value.trim();
+  const yr    = document.getElementById('year').value.trim();
   const angle = document.getElementById('angle').value.trim();
-  const file = document.getElementById('filename').value.trim();
+  const file  = document.getElementById('filename').value.trim();
+
+  const colorPart = useInterior
+    ? `<span class="seg-var">${ec}</span><span class="seg">__</span><span class="seg-int">${ic}</span><span class="seg">__${angle}</span>`
+    : `<span class="seg-var">${ec}</span><span class="seg">_${angle}</span>`;
+
   document.getElementById('urlPreview').innerHTML =
     `<span class="seg">${base}/images/exterior/${body}/</span>` +
     `<span class="seg-var">${brand}</span><span class="seg">/</span>` +
-    `<span class="seg-var">${year}</span><span class="seg">/</span>` +
+    `<span class="seg-var">${yr}</span><span class="seg">/</span>` +
     `<span class="seg-var">${mc}</span><span class="seg">/</span>` +
     `<span class="seg-var">${tr}</span><span class="seg">/</span>` +
-    `<span class="seg-var">${ec}</span><span class="seg">_${angle}/${file}</span>`;
+    colorPart +
+    `<span class="seg">/${file}</span>`;
 }
 
 // ─── CHECK LOGIC ─────────────────────────────────────────────────────────────
@@ -476,10 +570,18 @@ async function runPool(tasks, concurrency, isStopped) {
 
 async function startCheck() {
   if (running) return;
+
+  // Build combos — with or without interior
   const combos = [];
-  for (const mc of state.modelCodes) for (const tr of state.trims) for (const ec of state.extColors)
-    combos.push({ mc, tr, ec, url: buildUrl(mc, tr, ec) });
-  if (!combos.length) { alert('Add at least one value to each list.'); return; }
+  const intList = (useInterior && state.intColors.length) ? state.intColors : [null];
+
+  for (const mc of state.modelCodes)
+    for (const tr of state.trims)
+      for (const ec of state.extColors)
+        for (const ic of intList)
+          combos.push({ mc, tr, ec, ic, url: buildUrl(mc, tr, ec, ic) });
+
+  if (!combos.length) { alert('Add at least one value to each active list.'); return; }
 
   results = combos.map(c => ({...c, status:'loading', w:0, h:0}));
   running = true; shouldStop = false;
@@ -541,31 +643,44 @@ function clearResults() {
 // ─── RENDER TABLE ─────────────────────────────────────────────────────────────
 function badgeHtml(r) {
   if (r.status==='loading') return `<span class="badge badge-loading">⏳ Loading</span>`;
-  if (r.status==='ok') return `<span class="badge badge-ok">✓ ${r.w}×${r.h}px</span>`;
-  if (r.status==='bad') return `<span class="badge badge-bad">✗ Pixel ${r.w}×${r.h}px</span>`;
+  if (r.status==='ok')      return `<span class="badge badge-ok">✓ ${r.w}×${r.h}px</span>`;
+  if (r.status==='bad')     return `<span class="badge badge-bad">✗ Pixel ${r.w}×${r.h}px</span>`;
   return `<span class="badge badge-error">— Error</span>`;
 }
 function thumbHtml(r) {
-  if (r.status==='ok') return `<img class="thumb" src="${r.url}" alt="${r.ec}" onclick="openLightbox('${r.url}','${r.mc} / ${r.tr} / ${r.ec}')" title="Click para ampliar">`;
+  if (r.status==='ok')  return `<img class="thumb" src="${r.url}" alt="${r.ec}" onclick="openLightbox('${r.url}','${r.mc} / ${r.tr} / ${r.ec}${r.ic ? ' / ' + r.ic : ''}')" title="Click to enlarge">`;
   if (r.status==='bad') return `<img class="thumb pixel" src="${r.url}" alt="${r.ec}">`;
   return `<span style="color:var(--muted);font-family:var(--mono);font-size:11px">—</span>`;
 }
+
 function rowHtml(r, i) {
   const vis = activeFilter==='all' || r.status===activeFilter;
+  const intCell = useInterior
+    ? `<td><span style="font-family:var(--mono);font-size:13px;color:#c084fc">${r.ic || '—'}</span></td>`
+    : '';
   return `<tr id="row-${i}" style="${vis?'':'display:none'}">
     <td style="width:54px">${thumbHtml(r)}</td>
     <td><span style="font-family:var(--mono);font-size:13px">${r.mc}</span></td>
     <td><span style="font-family:var(--mono);font-size:13px">${r.tr}</span></td>
     <td><span style="font-family:var(--mono);font-size:13px">${r.ec}</span></td>
+    ${intCell}
     <td id="badge-${i}">${badgeHtml(r)}</td>
     <td class="url-cell"><a href="${r.url}" target="_blank">${r.url.replace(/^https?:\/\/[^/]+/,'')}</a></td>
   </tr>`;
 }
+
 function renderTable() {
   const c = document.getElementById('resultsContainer');
-  if (!results.length) { c.innerHTML=`<div class="empty-state">Configure the parameters<br>and press Verify</div>`; return; }
-  c.innerHTML = `<table class="results-table"><thead><tr><th></th><th>Model Code</th><th>Trim</th><th>Ext. Color</th><th>Status</th><th>URL</th></tr></thead><tbody>${results.map((r,i)=>rowHtml(r,i)).join('')}</tbody></table>`;
+  if (!results.length) {
+    c.innerHTML=`<div class="empty-state">Configure the parameters<br>and press Verify</div>`;
+    return;
+  }
+  const intHeader = useInterior ? '<th>Interior</th>' : '';
+  c.innerHTML = `<table class="results-table"><thead><tr>
+    <th></th><th>Model Code</th><th>Trim</th><th>Ext. Color</th>${intHeader}<th>Status</th><th>URL</th>
+  </tr></thead><tbody>${results.map((r,i)=>rowHtml(r,i)).join('')}</tbody></table>`;
 }
+
 function updateRowStatus(i) {
   const r = results[i];
   const b = document.getElementById(`badge-${i}`); if(b) b.innerHTML=badgeHtml(r);
@@ -576,9 +691,9 @@ function updateRowStatus(i) {
   }
 }
 function updateStats() {
-  document.getElementById('statTotal').textContent = results.length;
-  document.getElementById('statOk').textContent = results.filter(r=>r.status==='ok').length;
-  document.getElementById('statBad').textContent = results.filter(r=>r.status==='bad').length;
+  document.getElementById('statTotal').textContent   = results.length;
+  document.getElementById('statOk').textContent      = results.filter(r=>r.status==='ok').length;
+  document.getElementById('statBad').textContent     = results.filter(r=>r.status==='bad').length;
   document.getElementById('statPending').textContent = results.filter(r=>r.status==='loading').length;
 }
 
@@ -593,12 +708,13 @@ function setFilter(f, btn) {
 // ─── SUMMARY ─────────────────────────────────────────────────────────────────
 function buildSummaryData() {
   const okResults = results.filter(r => r.status === 'ok');
-  // Group by modelCode → trim → [colors]
+  // Group by modelCode → trim → extColor → [intColors]
   const grouped = {};
   okResults.forEach(r => {
     if (!grouped[r.mc]) grouped[r.mc] = {};
-    if (!grouped[r.mc][r.tr]) grouped[r.mc][r.tr] = [];
-    if (!grouped[r.mc][r.tr].includes(r.ec)) grouped[r.mc][r.tr].push(r.ec);
+    if (!grouped[r.mc][r.tr]) grouped[r.mc][r.tr] = {};
+    if (!grouped[r.mc][r.tr][r.ec]) grouped[r.mc][r.tr][r.ec] = [];
+    if (r.ic && !grouped[r.mc][r.tr][r.ec].includes(r.ic)) grouped[r.mc][r.tr][r.ec].push(r.ic);
   });
   return grouped;
 }
@@ -619,7 +735,6 @@ function renderSummary() {
   const grouped = buildSummaryData();
   const okCount = results.filter(r=>r.status==='ok').length;
   const content = document.getElementById('summaryContent');
-
   if (!okCount) { content.innerHTML = `<div style="color:var(--muted);font-family:var(--mono);font-size:12px">No valid combinations yet.</div>`; return; }
 
   let html = `<div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-bottom:14px">${okCount} combination${okCount!==1?'s':''} with real image</div>`;
@@ -628,11 +743,21 @@ function renderSummary() {
     html += `<div class="summary-group">`;
     html += `<div class="summary-group-title">Model Code: <b>${mc}</b></div>`;
     for (const tr of Object.keys(grouped[mc]).sort()) {
-      const colors = grouped[mc][tr].sort();
-      html += `<div style="margin-bottom:10px">`;
-      html += `<div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-bottom:5px">Trim <b style="color:var(--text)">${tr}</b> — ${colors.length} color${colors.length!==1?'es':''}</div>`;
-      html += `<div class="combo-chips">${colors.map(c=>`<span class="combo-chip">${c}</span>`).join('')}</div>`;
-      html += `</div>`;
+      for (const ec of Object.keys(grouped[mc][tr]).sort()) {
+        const intColors = grouped[mc][tr][ec];
+        html += `<div style="margin-bottom:10px">`;
+        html += `<div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-bottom:5px">Trim <b style="color:var(--text)">${tr}</b> · Ext <b style="color:var(--text)">${ec}</b>`;
+        if (intColors.length) {
+          html += ` — <span style="color:#c084fc">${intColors.length} interior${intColors.length!==1?'s':''}</span>`;
+        }
+        html += `</div>`;
+        if (intColors.length) {
+          html += `<div class="combo-chips">${intColors.map(c=>`<span class="combo-chip" style="color:#c084fc;background:rgba(192,132,252,0.07);border-color:rgba(192,132,252,0.2)">${c}</span>`).join('')}</div>`;
+        } else {
+          html += `<div class="combo-chips"><span class="combo-chip">✓ valid</span></div>`;
+        }
+        html += `</div>`;
+      }
     }
     html += `</div>`;
   }
@@ -641,12 +766,20 @@ function renderSummary() {
 
 function copySummaryText() {
   const grouped = buildSummaryData();
-  let lines = ['COMBINACIONES QUE FUNCIONAN', '='.repeat(40)];
+  let lines = ['VALID COMBINATIONS', '='.repeat(40)];
   for (const mc of Object.keys(grouped).sort()) {
     lines.push(`\nModel Code: ${mc}`);
     for (const tr of Object.keys(grouped[mc]).sort()) {
       lines.push(`  Trim: ${tr}`);
-      lines.push(`  Colores: ${grouped[mc][tr].sort().join(', ')}`);
+      for (const ec of Object.keys(grouped[mc][tr]).sort()) {
+        const intColors = grouped[mc][tr][ec];
+        if (intColors.length) {
+          lines.push(`    Ext: ${ec}`);
+          lines.push(`    Interior: ${intColors.sort().join(', ')}`);
+        } else {
+          lines.push(`    Ext: ${ec}`);
+        }
+      }
     }
   }
   navigator.clipboard.writeText(lines.join('\n')).then(() => {
@@ -660,7 +793,10 @@ function downloadSummaryJSON() {
     modelCode: mc,
     trims: Object.keys(grouped[mc]).sort().map(tr => ({
       trim: tr,
-      extColors: grouped[mc][tr].sort()
+      extColors: Object.keys(grouped[mc][tr]).sort().map(ec => {
+        const intColors = grouped[mc][tr][ec].sort();
+        return intColors.length ? { extColor: ec, intColors } : { extColor: ec };
+      })
     }))
   }));
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
@@ -682,6 +818,7 @@ function closeLightbox() {
 // ─── EXPORT ──────────────────────────────────────────────────────────────────
 function sendToGenerator() {
   const ok = results.filter(r => r.status === 'ok');
+  // Generator expects: MC TR EC per line (no interior — it doesn't use it)
   const lines = ok.map(r => `${r.mc} ${r.tr} ${r.ec}`).join('\n');
   localStorage.setItem('cc_pairs', lines);
   window.location.href = 'generator.html';
@@ -691,7 +828,7 @@ function exportPairs() {
   if (!results.length) return;
   const ok = results.filter(r => r.status === 'ok');
   if (!ok.length) return;
-  const lines = ok.map(r => `${r.mc} ${r.tr} ${r.ec}`).join('\n');
+  const lines = ok.map(r => [r.mc, r.tr, r.ec, r.ic].filter(Boolean).join(' ')).join('\n');
   navigator.clipboard.writeText(lines).then(() => {
     const btn = document.getElementById('exportPairsBtn');
     const orig = btn.textContent;
@@ -702,13 +839,22 @@ function exportPairs() {
 
 function exportCSV() {
   if (!results.length) return;
-  const rows = results.map(r=>`${r.mc},${r.tr},${r.ec},${r.status},${r.w},${r.h},${r.url}`);
-  const blob = new Blob(['modelCode,trim,extColor,status,width,height,url\n'+rows.join('\n')],{type:'text/csv'});
+  const hasInt = results.some(r => r.ic);
+  const header = `modelCode,trim,extColor${hasInt?',intColor':''},status,width,height,url`;
+  const rows = results.map(r => {
+    const intCol = hasInt ? `,${r.ic||''}` : '';
+    return `${r.mc},${r.tr},${r.ec}${intCol},${r.status},${r.w},${r.h},${r.url}`;
+  });
+  const blob = new Blob([header+'\n'+rows.join('\n')],{type:'text/csv'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='image-check-results.csv'; a.click();
 }
 function exportJSON() {
   if (!results.length) return;
-  const data=results.map(({mc,tr,ec,status,w,h,url})=>({modelCode:mc,trim:tr,extColor:ec,status,width:w,height:h,url}));
+  const data = results.map(({mc,tr,ec,ic,status,w,h,url}) => {
+    const obj = {modelCode:mc,trim:tr,extColor:ec};
+    if (ic) obj.intColor = ic;
+    return {...obj, status, width:w, height:h, url};
+  });
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='image-check-results.json'; a.click();
 }
@@ -717,14 +863,13 @@ function exportJSON() {
 renderTags('modelCodes','modelCodeList');
 renderTags('trims','trimList');
 renderTags('extColors','extColorList');
+renderTags('intColors','intColorList');
 updatePreview();
 ['baseUrl','bodyType','brand','year','angle','filename'].forEach(id=>{
   document.getElementById(id).addEventListener('input', updatePreview);
 });
 
 // ─── GLOBALS INTEGRATION ──────────────────────────────────────────────────────
-// Model codes sync bidirectionally with globals.mmcs.
-// Trims and ext colors are read-only from globals (checker lacks full pair structure).
 const _chkRenderTags = renderTags;
 renderTags = function(key, listId) {
   _chkRenderTags(key, listId);
@@ -732,8 +877,11 @@ renderTags = function(key, listId) {
 };
 
 initGlobals({
-  onMMCs:          (mmcs)  => { state.modelCodes = [...mmcs];  _chkRenderTags('modelCodes','modelCodeList'); },
-  onTrimPairs:     (pairs) => {
+  onMMCs: (mmcs) => {
+    state.modelCodes = [...mmcs];
+    _chkRenderTags('modelCodes','modelCodeList');
+  },
+  onTrimPairs: (pairs) => {
     const codes = pairs.map(p => p.trim).filter(Boolean);
     codes.forEach(c => { if (!state.trims.includes(c)) state.trims.push(c); });
     _chkRenderTags('trims','trimList');
@@ -742,6 +890,16 @@ initGlobals({
     const codes = pairs.map(p => p.code).filter(Boolean);
     codes.forEach(c => { if (!state.extColors.includes(c)) state.extColors.push(c); });
     _chkRenderTags('extColors','extColorList');
+  },
+  onInteriorPairs: (pairs) => {
+    const codes = pairs.map(p => p.code).filter(Boolean);
+    codes.forEach(c => { if (!state.intColors.includes(c)) state.intColors.push(c); });
+    _chkRenderTags('intColors','intColorList');
+    // Expand the section so the user can see the loaded codes,
+    // but leave the toggle OFF — they decide when to include interior in URLs
+    if (codes.length) {
+      document.getElementById('intSection').classList.add('open');
+    }
   },
 });
 </script>
