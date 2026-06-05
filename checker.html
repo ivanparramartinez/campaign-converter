@@ -1039,6 +1039,18 @@ initGlobals({
     codes.forEach(c => { if (!state.extColors.includes(c)) state.extColors.push(c); });
     _chkRenderTags('extColors','extColorList');
   },
+  onYears: (years) => {
+    if (years.length) {
+      document.getElementById('year').value = years[0];
+      updatePreview();
+    }
+  },
+});
+
+// Sync year and brand back to globals when changed in checker
+document.getElementById('year').addEventListener('input', e => {
+  const yr = e.target.value.trim();
+  if (yr) saveGlobals({ years: [yr] });
 });
 </script>
 </body>

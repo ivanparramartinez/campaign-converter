@@ -831,6 +831,14 @@ renderMmcMapList = function() {
 };
 
 initGlobals({
+  onBrand: (brand) => {
+    const sel = document.getElementById('marketingMake');
+    const opt = [...sel.options].find(o => o.value.toLowerCase() === brand.toLowerCase());
+    if (opt) sel.value = opt.value;
+  },
+  onYears: (years) => {
+    if (years.length) document.getElementById('modelYear').value = years[0];
+  },
   onInteriorPairs: (pairs) => {
     pairs.forEach(p => { if (p.code && !interiorColors.includes(p.code)) interiorColors.push(p.code); });
     _genRenderInterior();
@@ -839,6 +847,13 @@ initGlobals({
     Object.assign(mmcModelMap, map);
     _genRenderMmcMap();
   },
+});
+
+// Sync brand and year back to globals when changed in generator
+document.getElementById('marketingMake').addEventListener('change', e => saveGlobals({ brand: e.target.value }));
+document.getElementById('modelYear').addEventListener('input', e => {
+  const yr = e.target.value.trim();
+  if (yr) saveGlobals({ years: [yr] });
 });
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
