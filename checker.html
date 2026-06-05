@@ -99,36 +99,6 @@
 
   .run-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
-  /* INTERIOR TOGGLE */
-  .int-toggle-row {
-    display: flex; align-items: center; gap: 10px;
-    padding: 9px 11px; border-radius: 4px; cursor: pointer;
-    border: 1px solid var(--border);
-    background: var(--surface);
-    transition: border-color 0.15s, background 0.15s;
-    user-select: none;
-  }
-  .int-toggle-row:hover { border-color: #c084fc; }
-  .int-toggle-row.enabled { border-color: rgba(192,132,252,0.45); background: rgba(192,132,252,0.06); }
-  .int-toggle-switch {
-    width: 32px; height: 18px; border-radius: 9px; border: 1px solid var(--border2);
-    background: var(--surface2); position: relative; flex-shrink: 0; transition: background 0.2s, border-color 0.2s;
-  }
-  .int-toggle-switch::after {
-    content: ''; position: absolute; top: 2px; left: 2px;
-    width: 12px; height: 12px; border-radius: 50%;
-    background: var(--muted); transition: left 0.2s, background 0.2s;
-  }
-  .int-toggle-row.enabled .int-toggle-switch { background: rgba(192,132,252,0.25); border-color: #c084fc; }
-  .int-toggle-row.enabled .int-toggle-switch::after { left: 16px; background: #c084fc; }
-  .int-toggle-label { font-family: var(--mono); font-size: 11px; color: var(--muted2); letter-spacing: 0.08em; text-transform: uppercase; }
-  .int-toggle-row.enabled .int-toggle-label { color: #c084fc; }
-  .int-toggle-hint { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-left: auto; }
-
-  /* Interior section collapsed/expanded */
-  .int-section { overflow: hidden; transition: max-height 0.25s ease, opacity 0.2s; max-height: 0; opacity: 0; }
-  .int-section.open { max-height: 400px; opacity: 1; }
-
   .progress-wrap { display: none; margin-top: 10px; }
   .progress-bar-bg { background: var(--surface2); border-radius: 2px; height: 3px; overflow: hidden; }
   .progress-bar { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.2s; width: 0%; }
@@ -378,25 +348,6 @@
       <div class="tag-list" id="extColorList"></div>
     </div>
 
-    <!-- INTERIOR COLORS (availability modal only — not included in URL) -->
-    <div>
-      <div class="section-title" style="color:#c084fc">
-        <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#c084fc"></span>
-        Interior Colors
-        <span style="font-family:var(--mono);font-size:9px;color:var(--muted);font-weight:400;margin-left:4px;text-transform:none;letter-spacing:0">— for availability modal only</span>
-      </div>
-      <div class="bulk-hint">Comma, space or Enter separated</div>
-      <div class="bulk-row">
-        <textarea id="newIntColor" placeholder="H7D, H2G, HVE" rows="2"></textarea>
-        <button class="btn btn-sm" onclick="bulkAdd('intColors','newIntColor','intColorList')">+ Add</button>
-      </div>
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px">
-        <span style="font-family:var(--mono);font-size:10px;color:#c084fc" id="intColorsCount">0 colors</span>
-        <button class="tag-clear" onclick="clearAll('intColors','intColorList')" style="border-color:rgba(192,132,252,0.3);color:#c084fc" onmouseover="this.style.borderColor='#c084fc'" onmouseout="this.style.borderColor='rgba(192,132,252,0.3)'">clear</button>
-      </div>
-      <div class="tag-list" id="intColorList"></div>
-    </div>
-
     <!-- RUN -->
     <div>
       <div class="run-row">
@@ -472,13 +423,13 @@
 </div>
 
 <script>
-const state = { modelCodes: [], trims: [], extColors: [], intColors: [] };
+const state = { modelCodes: [], trims: [], extColors: [] };
 let results = [], activeFilter = 'all', running = false, shouldStop = false;
 let summaryOpen = false;
 
-const countLabels = { modelCodes: 'modelCodesCount', trims: 'trimsCount', extColors: 'extColorsCount', intColors: 'intColorsCount' };
-const countSuffix = { modelCodes: 'codes', trims: 'trims', extColors: 'colors', intColors: 'colors' };
-const listIds     = { modelCodes: 'modelCodeList', trims: 'trimList', extColors: 'extColorList', intColors: 'intColorList' };
+const countLabels = { modelCodes: 'modelCodesCount', trims: 'trimsCount', extColors: 'extColorsCount' };
+const countSuffix = { modelCodes: 'codes', trims: 'trims', extColors: 'colors' };
+const listIds     = { modelCodes: 'modelCodeList', trims: 'trimList', extColors: 'extColorList' };
 
 
 // ─── BULK ADD ────────────────────────────────────────────────────────────────
@@ -506,9 +457,8 @@ function removeTag(key, i, listId) {
 
 function renderTags(key, listId) {
   const el = document.getElementById(listId);
-  const isInt = key === 'intColors';
   el.innerHTML = state[key].map((v, i) =>
-    `<span class="tag" style="${isInt ? 'background:rgba(192,132,252,0.08);border-color:rgba(192,132,252,0.25);color:#c084fc' : ''}">${v}<span class="del" onclick="removeTag('${key}',${i},'${listId}')">×</span></span>`
+    `<span class="tag">${v}<span class="del" onclick="removeTag('${key}',${i},'${listId}')">×</span></span>`
   ).join('');
   const cnt = document.getElementById(countLabels[key]);
   if (cnt) cnt.textContent = `${state[key].length} ${countSuffix[key]}`;
@@ -520,17 +470,14 @@ function renderTags(key, listId) {
   ['newModelCode','modelCodes','modelCodeList'],
   ['newTrim','trims','trimList'],
   ['newExtColor','extColors','extColorList'],
-  ['newIntColor','intColors','intColorList'],
 ].forEach(([id,key,listId]) => {
-  const el = document.getElementById(id);
-  if (el) el.addEventListener('keydown', e => {
+  document.getElementById(id).addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); bulkAdd(key, id, listId); }
   });
 });
 
 // ─── URL BUILDING ─────────────────────────────────────────────────────────────
 // Format: {base}/images/exterior/{body}/{brand}/{year}/{MMC}/{trim}/{ext}_{angle}/{file}
-// Interior colors are NOT part of the URL — they live in the availability modal only.
 function buildUrl(mc, tr, ec) {
   const base  = document.getElementById('baseUrl').value.trim().replace(/\/$/, '');
   const body  = document.getElementById('bodyType').value.trim();
@@ -744,7 +691,7 @@ function setFilter(f, btn) {
 // ─── SUMMARY ─────────────────────────────────────────────────────────────────
 function buildSummaryData() {
   const okResults = results.filter(r => r.status === 'ok');
-  // Group by modelCode → trim → extColor → [intColors]
+  // Group by modelCode → trim → [extColors]
   const grouped = {};
   okResults.forEach(r => {
     if (!grouped[r.mc]) grouped[r.mc] = {};
@@ -868,7 +815,6 @@ function exportJSON() {
 renderTags('modelCodes','modelCodeList');
 renderTags('trims','trimList');
 renderTags('extColors','extColorList');
-renderTags('intColors','intColorList');
 updatePreview();
 ['baseUrl','bodyType','brand','year','angle','filename'].forEach(id=>{
   document.getElementById(id).addEventListener('input', updatePreview);
@@ -1017,11 +963,6 @@ initGlobals({
     const codes = pairs.map(p => p.code).filter(Boolean);
     codes.forEach(c => { if (!state.extColors.includes(c)) state.extColors.push(c); });
     _chkRenderTags('extColors','extColorList');
-  },
-  onInteriorPairs: (pairs) => {
-    const codes = pairs.map(p => p.code).filter(Boolean);
-    codes.forEach(c => { if (!state.intColors.includes(c)) state.intColors.push(c); });
-    _chkRenderTags('intColors','intColorList');
   },
 });
 </script>
