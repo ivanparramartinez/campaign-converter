@@ -1,10 +1,30 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
+  "headers": [
+    {
+      "source": "/(.*)\\.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
+        { "key": "Pragma",        "value": "no-cache" },
+        { "key": "Expires",       "value": "0" }
+      ]
+    },
+    {
+      "source": "/(.*)\\.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
+    }
+  ],
   "routes": [
-    { "src": "/checker",        "dest": "/checker.html" },
-    { "src": "/generator",      "dest": "/generator.html" },
-    { "src": "/trim-collection","dest": "/trim-collection.html" },
-    { "src": "/interior",       "dest": "/interior.html" }
+    { "src": "/checker",         "dest": "/checker.html" },
+    { "src": "/generator",       "dest": "/generator.html" },
+    { "src": "/trim-collection", "dest": "/trim-collection.html" },
+    { "src": "/interior",        "dest": "/interior.html" },
+    { "src": "/campaign",        "dest": "/campaign.html" },
+    { "src": "/exteriors",       "dest": "/exteriors.html" },
+    { "src": "/models",          "dest": "/models.html" },
+    { "src": "/viewer",          "dest": "/viewer.html" }
   ]
 }
