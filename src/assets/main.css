@@ -1,0 +1,86 @@
+:root {
+  --bg: #0a0a0a; --surface: #141414; --surface2: #1c1c1c;
+  --border: #262626; --border2: #333;
+  --accent: #c8ff00; --accent2: #00c8ff;
+  --text: #e8e8e0; --muted: #555; --muted2: #888;
+  --danger: #ff4455; --success: #00e676; --warning: #ffbb00;
+  --mono: 'IBM Plex Mono', monospace; --sans: 'IBM Plex Sans', sans-serif;
+  --c-mmc:  #34d399; --c-trim: #f87171;
+  --c-ext:  #ff9f43; --c-int:  #c084fc;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* Shared form elements */
+label { display: block; font-size: 11px; font-weight: 500; color: var(--muted2); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), select, textarea {
+  width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text);
+  font-family: var(--mono); font-size: 13px; padding: 7px 11px; border-radius: 4px; outline: none; transition: border-color 0.15s;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus, select:focus, textarea:focus { border-color: var(--accent); }
+input::placeholder, textarea::placeholder { color: var(--muted); }
+select option { background: var(--surface); }
+textarea { resize: vertical; line-height: 1.6; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 12px; font-weight: 500;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 8px 16px; border-radius: 4px; border: 1px solid var(--border2);
+  cursor: pointer; transition: all 0.15s; background: transparent; color: var(--text);
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-accent { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+.btn-accent:hover { background: #b0e600; border-color: #b0e600; color: #000; }
+.btn-danger { border-color: var(--danger); color: var(--danger); }
+.btn-danger:hover { background: var(--danger); color: #fff; }
+.btn-stop { background: var(--danger); color: #fff; border-color: var(--danger); }
+.btn-stop:hover { background: #cc2233; border-color: #cc2233; color: #fff; }
+.btn-cyan { background: rgba(0,200,255,0.08); color: var(--accent2); border-color: var(--accent2); }
+.btn-cyan:hover { background: rgba(0,200,255,0.18); }
+.btn-sm { padding: 5px 9px; font-size: 11px; }
+
+/* Section title */
+.section-title {
+  font-family: var(--mono); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted2);
+  padding-bottom: 7px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 7px;
+}
+
+/* Tag list */
+.tag-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; min-height: 20px; }
+.tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--mono); font-size: 12px;
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 3px; padding: 3px 9px;
+}
+.tag .del { cursor: pointer; color: var(--muted); font-size: 14px; line-height: 1; transition: color 0.1s; }
+.tag .del:hover { color: var(--danger); }
+
+/* Hint text */
+.hint { font-size: 11px; color: var(--muted); font-family: var(--mono); line-height: 1.7; }
+.hint code { color: var(--accent2); }
+
+/* Badge */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--mono); font-size: 11px; font-weight: 600;
+  padding: 3px 9px; border-radius: 3px;
+}
+.badge-ok  { background: rgba(0,230,118,0.1); color: var(--success); border: 1px solid rgba(0,230,118,0.2); }
+.badge-bad { background: rgba(255,68,85,0.1);  color: var(--danger);  border: 1px solid rgba(255,68,85,0.2); }
+.badge-loading { background: rgba(255,187,0,0.1); color: var(--warning); border: 1px solid rgba(255,187,0,0.2); }
+.badge-error { background: rgba(100,100,100,0.1); color: var(--muted2); border: 1px solid var(--border2); }
+
+/* Router link active override */
+a { text-decoration: none; color: inherit; }
