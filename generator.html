@@ -281,10 +281,6 @@
           <label>Order Nbr</label>
           <input type="text" id="orderNbr" value="CQ0005005">
         </div>
-        <div>
-          <label>Campaign Identifier</label>
-          <input type="text" id="campaignId" value="B2000015743">
-        </div>
       </div>
       <div class="grid2">
         <div>
@@ -335,48 +331,64 @@
       <div class="grid2">
         <div>
           <label>First Name</label>
-          <input type="text" id="firstName" value="Ed">
+          <input type="text" id="firstName" value="Amelia">
         </div>
         <div>
-          <label>Last Name</label>
-          <input type="text" id="lastName" value="RHODES">
+          <label>Email</label>
+          <input type="email" id="email" value="gmtestsemails@rapp.com">
         </div>
       </div>
-      <label>Email</label>
-      <input type="email" id="email" value="gmrapp3+4-18@gmail.com">
+      <div class="grid2">
+        <div>
+          <label>Touch</label>
+          <input type="text" id="touch" value="CANS_SEEDS">
+        </div>
+        <div>
+          <label>VIN</label>
+          <input type="text" id="vin" value="1G1TSTR86TE900001">
+        </div>
+      </div>
       <!-- DEALER PASTE -->
       <div style="margin-bottom:14px">
         <label>Paste dealer info (one line per field)</label>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:6px">Order: Name / Address / City / State / ZIP / Phone / URL</div>
-        <textarea id="dealerPaste" rows="4" placeholder="Jim Trenary Chevrolet Of Troy&#10;200 Professional Parkway&#10;Troy&#10;MO&#10;63379&#10;6364623332&#10;https://www.jimtrenarytroy.com" style="resize:vertical;width:100%;font-size:12px;"></textarea>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:6px">Order: Name / BAC / Address / City / State / ZIP / Phone / URL</div>
+        <textarea id="dealerPaste" rows="5" placeholder="Chevrolet Of Bellevue&#10;225875&#10;13400 Ne 20th St&#10;Bellevue&#10;WA&#10;98005&#10;4254548931&#10;https://www.chevroletofbellevue.com" style="resize:vertical;width:100%;font-size:12px;"></textarea>
         <button class="btn btn-sm" onclick="parseDealerPaste()" style="margin-top:6px;width:100%">↑ Load dealer data</button>
       </div>
       <label>Dealer Name</label>
-      <input type="text" id="dealerName" value="Jim Trenary Chevrolet Of Troy">
-      <label>Dealer Address</label>
-      <input type="text" id="dealerAddress" value="200 Professional Parkway">
+      <input type="text" id="dealerName" value="Chevrolet Of Bellevue">
+      <div class="grid2">
+        <div>
+          <label>Dealer BAC</label>
+          <input type="text" id="dealerBAC" value="225875">
+        </div>
+        <div>
+          <label>Dealer Address</label>
+          <input type="text" id="dealerAddress" value="13400 Ne 20th St">
+        </div>
+      </div>
       <div class="grid3">
         <div>
           <label>City</label>
-          <input type="text" id="dealerCity" value="Troy">
+          <input type="text" id="dealerCity" value="Bellevue">
         </div>
         <div>
           <label>State</label>
-          <input type="text" id="dealerState" value="MO">
+          <input type="text" id="dealerState" value="WA">
         </div>
         <div>
           <label>ZIP</label>
-          <input type="text" id="dealerZip" value="63379">
+          <input type="text" id="dealerZip" value="98005">
         </div>
       </div>
       <div class="grid2">
         <div>
           <label>Dealer Phone</label>
-          <input type="tel" id="dealerPhone" value="6364623332">
+          <input type="tel" id="dealerPhone" value="4254548931">
         </div>
         <div>
           <label>Dealer URL</label>
-          <input type="text" id="dealerURL" value="https://www.jimtrenarytroy.com">
+          <input type="text" id="dealerURL" value="https://www.chevroletofbellevue.com">
         </div>
       </div>
     </div>
@@ -579,13 +591,15 @@ function parseDealerPaste() {
   const raw = document.getElementById('dealerPaste').value.trim();
   if (!raw) return;
   const lines = raw.split('\n').map(l => l.trim());
+  // Order: Name / BAC / Address / City / State / ZIP / Phone / URL
   if (lines[0]) document.getElementById('dealerName').value    = lines[0];
-  if (lines[1]) document.getElementById('dealerAddress').value = lines[1];
-  if (lines[2]) document.getElementById('dealerCity').value    = lines[2];
-  if (lines[3]) document.getElementById('dealerState').value   = lines[3];
-  if (lines[4]) document.getElementById('dealerZip').value     = lines[4];
-  if (lines[5]) document.getElementById('dealerPhone').value   = lines[5];
-  if (lines[6]) document.getElementById('dealerURL').value     = lines[6];
+  if (lines[1]) document.getElementById('dealerBAC').value     = lines[1];
+  if (lines[2]) document.getElementById('dealerAddress').value = lines[2];
+  if (lines[3]) document.getElementById('dealerCity').value    = lines[3];
+  if (lines[4]) document.getElementById('dealerState').value   = lines[4];
+  if (lines[5]) document.getElementById('dealerZip').value     = lines[5];
+  if (lines[6]) document.getElementById('dealerPhone').value   = lines[6];
+  if (lines[7]) document.getElementById('dealerURL').value     = lines[7];
   document.getElementById('dealerPaste').value = '';
 }
 
@@ -599,22 +613,23 @@ function generate() {
   const prefix = getVal('campaignPrefix') || 'CANS';
 
   const base = {
-    orderNbr:        getVal('orderNbr'),
-    modelYear:       getVal('modelYear'),
-    marketingModel:  getVal('marketingModel'),
-    marketingMake:   getVal('marketingMake'),
+    orderNbr:      getVal('orderNbr'),
+    modelYear:     getVal('modelYear'),
+    marketingModel: getVal('marketingModel'),
+    marketingMake:  getVal('marketingMake'),
     loyaltyMemberFlag: getVal('loyaltyFlag'),
-    campaignIdentifier: getVal('campaignId'),
-    firstName:   getVal('firstName'),
-    lastName:    getVal('lastName'),
-    email:       getVal('email'),
-    dealerCity:  getVal('dealerCity'),
-    dealerState: getVal('dealerState'),
-    dealerZip:   getVal('dealerZip'),
-    dealerURL:   (u => u && !u.match(/^https?:\/\//) ? 'https://' + u : u)(getVal('dealerURL')),
-    dealerPhone: getVal('dealerPhone'),
-    dealerName:  getVal('dealerName'),
+    firstName:    getVal('firstName'),
+    Email:        getVal('email'),
+    Touch:        getVal('touch'),
+    VIN:          getVal('vin'),
+    dealerName:   getVal('dealerName'),
+    dealerBAC:    getVal('dealerBAC'),
     dealerAddress: getVal('dealerAddress'),
+    dealerCity:   getVal('dealerCity'),
+    dealerState:  getVal('dealerState'),
+    dealerZip:    getVal('dealerZip'),
+    dealerPhone:  getVal('dealerPhone'),
+    dealerURL:    (u => u && !u.match(/^https?:\/\//) ? 'https://' + u : u)(getVal('dealerURL')),
   };
 
   const msgIdStart = parseInt(getVal('messageId')) || 1;
@@ -653,15 +668,30 @@ function generate() {
             }
           },
           targetData: {
-            ...base,
-            VERSION_NAME: versionName,
-            marketingModel: modelName,
-            loyaltyMemberFlag: loyaltyFlag,
-            eventCode: ec,
-            trim: combo.trim,
-            exteriorColor: combo.ext,
-            merchandisingModelCode: combo.model,
-            interior: intColor,
+            SCENARIO_ID:             String(msgIdx + 1),
+            VERSION_NAME:            versionName,
+            Touch:                   base.Touch,
+            orderNbr:                base.orderNbr,
+            merchandisingModelCode:  combo.model,
+            dealerAddress:           base.dealerAddress,
+            dealerBAC:               base.dealerBAC,
+            dealerCity:              base.dealerCity,
+            dealerName:              base.dealerName,
+            dealerPhone:             base.dealerPhone,
+            dealerState:             base.dealerState,
+            dealerURL:               base.dealerURL,
+            dealerZip:               base.dealerZip,
+            exteriorColor:           combo.ext,
+            firstName:               base.firstName,
+            interior:                intColor,
+            modelYear:               base.modelYear,
+            trim:                    combo.trim,
+            marketingMake:           base.marketingMake,
+            marketingModel:          modelName,
+            VIN:                     base.VIN,
+            eventCode:               ec,
+            Email:                   base.Email,
+            loyaltyMemberFlag:       loyaltyFlag,
           }
         });
         msgIdx++;
