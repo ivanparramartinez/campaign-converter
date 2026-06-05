@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trim Matrix — Campaign Converter</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="globals.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0a; --surface: #141414; --surface2: #1c1c1c;
+    --border: #262626; --border2: #333;
+    --accent: #f87171; --accent2: #00c8ff;
+    --text: #e8e8e0; --muted: #555; --muted2: #888;
+    --danger: #ff4455; --success: #00e676; --warning: #ffbb00;
+    --mono: 'IBM Plex Mono', monospace; --sans: 'IBM Plex Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+
+  .topnav { border-bottom: 1px solid var(--border); padding: 10px 20px; display: flex; align-items: center; gap: 16px; background: var(--bg); position: sticky; top: 0; z-index: 300; }
+  .topnav a { font-family: var(--mono); font-size: 11px; color: var(--muted); text-decoration: none; padding: 4px 10px; border-radius: 3px; transition: color 0.1s; letter-spacing: 0.06em; }
+  .topnav a:hover { color: var(--text); }
+  .topnav a.active { color: var(--accent); }
+
+  header { border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 47px; background: var(--bg); z-index: 200; }
+  .logo { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
+  .logo span { color: var(--accent); }
+  .header-stat { font-family: var(--mono); font-size: 11px; color: var(--muted2); }
+  .header-stat b { color: var(--accent); font-weight: 600; }
+
+  .layout { display: grid; grid-template-columns: 300px 1fr; min-height: calc(100vh - 95px); }
+  .sidebar { border-right: 1px solid var(--border); padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
+  .main { padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 0; }
+
+  .section-title {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted2);
+    margin-bottom: 10px; padding-bottom: 7px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 7px;
+  }
+  .section-title::before { content: ''; display: inline-block; width: 5px; height: 5px; background: var(--accent); border-radius: 50%; }
+
+  label { display: block; font-size: 11px; font-weight: 500; color: var(--muted2); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
+
+  select, input[type="text"], textarea {
+    width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    font-family: var(--mono); font-size: 13px; padding: 7px 11px; border-radius: 4px; outline: none;
+    transition: border-color 0.15s;
+  }
+  select:focus, input:focus, textarea:focus { border-color: var(--accent); }
+  textarea { resize: vertical; line-height: 1.6; }
+  input::placeholder, textarea::placeholder { color: var(--muted); }
+
+  .hint { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 3px; margin-bottom: 8px; }
+
+  .tag-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; min-height: 16px; }
+  .tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono); font-size: 12px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 3px; padding: 3px 9px;
+  }
+  .tag .del { cursor: pointer; color: var(--muted); font-size: 14px; line-height: 1; transition: color 0.1s; }
+  .tag .del:hover { color: var(--danger); }
+  .tag-header { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+  .tag-count { font-family: var(--mono); font-size: 10px; color: var(--muted2); }
+  .tag-clear { font-family: var(--mono); font-size: 10px; color: var(--muted); cursor: pointer; padding: 2px 7px; border: 1px solid var(--border); border-radius: 3px; background: transparent; transition: color 0.1s; }
+  .tag-clear:hover { color: var(--danger); border-color: var(--danger); }
+
+  .bulk-row { display: flex; gap: 7px; align-items: flex-start; }
+  .bulk-row textarea { flex: 1; min-height: 38px; max-height: 80px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 12px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 8px 16px; border-radius: 4px; border: 1px solid var(--border2);
+    cursor: pointer; transition: all 0.15s; background: transparent; color: var(--text);
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-accent { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+  .btn-accent:hover { background: #ef4444; border-color: #ef4444; }
+  .btn-sm { padding: 5px 9px; font-size: 11px; }
+  .run-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* OUTPUT TABLE */
+  .output-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+  .output-actions { display: flex; gap: 8px; }
+
+  .matrix-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+  .matrix-table th {
+    text-align: left; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted2); padding: 6px 12px; border-bottom: 1px solid var(--border2);
+    font-weight: 600; position: sticky; top: 0; background: var(--bg); z-index: 10;
+  }
+  .matrix-table td { padding: 6px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .matrix-table tr:hover td { background: var(--surface); }
+  .matrix-table tr.mmc-first td { border-top: 2px solid var(--border2); }
+
+  .cell-mmc  { color: var(--accent2); font-weight: 600; }
+  .cell-trim { color: var(--accent); }
+  .cell-text { color: var(--muted2); }
+  .cell-meta { color: var(--muted); }
+
+  .stat-pill { font-family: var(--mono); font-size: 11px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 3px; padding: 3px 10px; color: var(--muted2); }
+  .stat-pill b { color: var(--text); }
+
+  .empty-state { text-align: center; padding: 60px 20px; font-family: var(--mono); font-size: 13px; color: var(--muted); line-height: 2.2; }
+
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  @media (max-width: 800px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <a href="index.html" style="letter-spacing:0.1em;text-transform:uppercase;display:flex;align-items:center;gap:6px">← Campaign Converter</a>
+  <div style="flex:1"></div>
+  <a href="models.html">Models</a>
+  <a href="trim-collection.html">Trim Collection</a>
+  <a href="trim-matrix.html" class="active">Trim Matrix</a>
+  <a href="exteriors.html">Exteriors</a>
+  <a href="interior.html">Interior</a>
+  <a href="checker.html">Checker</a>
+  <a href="generator.html">Generator</a>
+  <a href="campaign.html">Setup</a>
+  <a href="viewer.html">Viewer</a>
+</div>
+
+<header>
+  <div class="logo">GM <span>//</span> Trim Matrix</div>
+  <div class="header-stat">Rows: <b id="rowCount">0</b></div>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <!-- BRAND -->
+    <div>
+      <div class="section-title">Brand</div>
+      <select id="inBrand">
+        <option value="">— Select brand —</option>
+        <option value="Chevrolet">Chevrolet</option>
+        <option value="Cadillac">Cadillac</option>
+        <option value="GMC">GMC</option>
+        <option value="Buick">Buick</option>
+      </select>
+    </div>
+
+    <!-- MODEL YEAR -->
+    <div>
+      <div class="section-title">Model Year</div>
+      <div class="hint">Comma or space separated</div>
+      <div style="display:flex;gap:7px">
+        <input type="text" id="inYear" placeholder="2025, 2026">
+        <button class="btn btn-sm" onclick="addYears()">+</button>
+      </div>
+      <div class="tag-header">
+        <span class="tag-count" id="yearsCount">0 years</span>
+        <button class="tag-clear" onclick="clearYears()">clear</button>
+      </div>
+      <div class="tag-list" id="yearList"></div>
+    </div>
+
+    <!-- MMC CODES -->
+    <div>
+      <div class="section-title">MMC Codes</div>
+      <div class="hint">Comma, space or Enter separated</div>
+      <div class="bulk-row">
+        <textarea id="inMmc" placeholder="TC10543, TK10906" rows="2"></textarea>
+        <button class="btn btn-sm" onclick="addMMCs()">+</button>
+      </div>
+      <div class="tag-header">
+        <span class="tag-count" id="mmcCount">0 codes</span>
+        <button class="tag-clear" onclick="clearMMCs()">clear</button>
+      </div>
+      <div class="tag-list" id="mmcList"></div>
+    </div>
+
+    <!-- TRIM SOURCE INFO -->
+    <div>
+      <div class="section-title">Trim Pairs</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.8" id="trimSource">
+        — load via Campaign Setup
+      </div>
+    </div>
+
+    <!-- GENERATE -->
+    <div>
+      <div class="run-row">
+        <button class="btn btn-accent" onclick="generate()">⚡ Generate</button>
+        <button class="btn btn-sm" onclick="resetAll()">↺ Reset</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="output-header">
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="statChips"></div>
+      <div class="output-actions">
+        <button class="btn btn-sm" id="copyBtn" onclick="copyTSV()">⎘ Copy for Excel</button>
+        <button class="btn btn-sm" onclick="downloadCSV()">↓ CSV</button>
+      </div>
+    </div>
+
+    <div id="tableWrap">
+      <div class="empty-state">Select brand, year and MMC codes,<br>then press Generate</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const state = { years: [], mmcs: [] };
+let generated = []; // [{brand, model_yr, mmc, trim, trim_text}]
+
+// ── Trim applicability (mirrors trim-collection logic) ─────────────────────
+function trimAppliesTo(pair, mmc) {
+  if (pair.filterMode === 'all')     return true;
+  if (pair.filterMode === 'only')    return (pair.filterMMCs || []).includes(mmc.toUpperCase());
+  if (pair.filterMode === 'exclude') return !(pair.filterMMCs || []).includes(mmc.toUpperCase());
+  return true;
+}
+
+// ── Add / remove ───────────────────────────────────────────────────────────
+function parseTokens(str) {
+  return str.split(/[,\s\n]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
+}
+
+function addYears() {
+  parseTokens(document.getElementById('inYear').value)
+    .forEach(v => { if (!state.years.includes(v)) state.years.push(v); });
+  document.getElementById('inYear').value = '';
+  renderYears();
+}
+
+function clearYears() { state.years = []; renderYears(); }
+
+function removeYear(i) { state.years.splice(i, 1); renderYears(); }
+
+function renderYears() {
+  document.getElementById('yearList').innerHTML = state.years.map((v, i) =>
+    `<span class="tag">${v}<span class="del" onclick="removeYear(${i})">×</span></span>`
+  ).join('');
+  document.getElementById('yearsCount').textContent = `${state.years.length} year${state.years.length !== 1 ? 's' : ''}`;
+}
+
+function addMMCs() {
+  parseTokens(document.getElementById('inMmc').value)
+    .forEach(v => { if (!state.mmcs.includes(v)) state.mmcs.push(v); });
+  document.getElementById('inMmc').value = '';
+  renderMMCs();
+}
+
+function clearMMCs() { state.mmcs = []; renderMMCs(); }
+
+function removeMMC(i) { state.mmcs.splice(i, 1); renderMMCs(); }
+
+function renderMMCs() {
+  document.getElementById('mmcList').innerHTML = state.mmcs.map((v, i) =>
+    `<span class="tag">${v}<span class="del" onclick="removeMMC(${i})">×</span></span>`
+  ).join('');
+  document.getElementById('mmcCount').textContent = `${state.mmcs.length} code${state.mmcs.length !== 1 ? 's' : ''}`;
+}
+
+document.getElementById('inYear').addEventListener('keydown', e => { if (e.key === 'Enter') addYears(); });
+document.getElementById('inMmc').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addMMCs(); } });
+
+// ── Generate ───────────────────────────────────────────────────────────────
+function generate() {
+  const brand = document.getElementById('inBrand').value;
+  if (!brand)            { alert('Select a brand.'); return; }
+  if (!state.years.length) { alert('Add at least one model year.'); return; }
+  if (!state.mmcs.length)  { alert('Add at least one MMC code.'); return; }
+
+  const g = getGlobals();
+  const trimPairs = g.trimPairs || [];
+
+  if (!trimPairs.length) {
+    alert('No trim pairs found in globals.\nLoad them via Campaign Setup first.');
+    return;
+  }
+
+  generated = [];
+
+  for (const yr of state.years) {
+    for (const mmc of state.mmcs) {
+      const applicable = trimPairs.filter(p => trimAppliesTo(p, mmc));
+      for (const p of applicable) {
+        generated.push({
+          brand,
+          model_yr: yr,
+          mmc,
+          trim:      p.trim,
+          trim_text: p.text,
+        });
+      }
+    }
+  }
+
+  renderTable();
+  document.getElementById('rowCount').textContent = generated.length;
+
+  // Stat chips
+  const mmcCount  = [...new Set(generated.map(r => r.mmc))].length;
+  const trimCount = [...new Set(generated.map(r => r.trim))].length;
+  document.getElementById('statChips').innerHTML = [
+    `<span class="stat-pill"><b>${generated.length}</b> rows</span>`,
+    `<span class="stat-pill"><b>${mmcCount}</b> MMC${mmcCount !== 1 ? 's' : ''}</span>`,
+    `<span class="stat-pill"><b>${trimCount}</b> unique trim${trimCount !== 1 ? 's' : ''}</span>`,
+    `<span class="stat-pill"><b>${brand}</b></span>`,
+  ].join('');
+}
+
+// ── Render table ───────────────────────────────────────────────────────────
+function renderTable() {
+  const wrap = document.getElementById('tableWrap');
+
+  if (!generated.length) {
+    wrap.innerHTML = '<div class="empty-state">No rows generated.<br>Check that trim pairs are loaded in globals.</div>';
+    return;
+  }
+
+  let prevMmc = null;
+  const rows = generated.map(r => {
+    const isFirst = r.mmc !== prevMmc;
+    prevMmc = r.mmc;
+    return `<tr class="${isFirst ? 'mmc-first' : ''}">
+      <td class="cell-meta">${r.brand}</td>
+      <td class="cell-meta">${r.model_yr}</td>
+      <td class="cell-mmc">${r.mmc}</td>
+      <td class="cell-trim">${r.trim}</td>
+      <td class="cell-text">${r.trim_text}</td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <table class="matrix-table">
+      <thead>
+        <tr>
+          <th>Brand</th>
+          <th>Model Yr</th>
+          <th>MMC</th>
+          <th>Trim</th>
+          <th>Trim Text</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ── Copy / Export ──────────────────────────────────────────────────────────
+function copyTSV() {
+  if (!generated.length) { alert('Generate first.'); return; }
+  const tsv = generated.map(r =>
+    [r.brand, r.model_yr, r.mmc, r.trim, r.trim_text].join('\t')
+  ).join('\n');
+  navigator.clipboard.writeText(tsv).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✓ Copied';
+    setTimeout(() => btn.textContent = '⎘ Copy for Excel', 2000);
+  });
+}
+
+function downloadCSV() {
+  if (!generated.length) { alert('Generate first.'); return; }
+  const header = 'BRAND,MODEL_YR,MMC,TRIM,TRIM_TEXT';
+  const rows = generated.map(r =>
+    [r.brand, r.model_yr, r.mmc, r.trim, `"${r.trim_text}"`].join(',')
+  );
+  const blob = new Blob([header + '\n' + rows.join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `trim-matrix.csv`;
+  a.click();
+}
+
+function resetAll() {
+  state.years = []; state.mmcs = [];
+  document.getElementById('inBrand').value = '';
+  renderYears(); renderMMCs();
+  generated = [];
+  document.getElementById('tableWrap').innerHTML =
+    '<div class="empty-state">Select brand, year and MMC codes,<br>then press Generate</div>';
+  document.getElementById('rowCount').textContent = '0';
+  document.getElementById('statChips').innerHTML = '';
+}
+
+// ── Globals integration ────────────────────────────────────────────────────
+function updateTrimSource() {
+  const g = getGlobals();
+  const pairs = g.trimPairs || [];
+  const el = document.getElementById('trimSource');
+  if (pairs.length) {
+    el.innerHTML = `<span style="color:var(--success)">✓ ${pairs.length} pair${pairs.length !== 1 ? 's' : ''} loaded from globals</span>`;
+  } else {
+    el.innerHTML = `— load via <a href="campaign.html" style="color:var(--accent2);text-decoration:none">Campaign Setup</a>`;
+  }
+}
+
+document.getElementById('inBrand').addEventListener('change', e => saveGlobals({ brand: e.target.value }));
+
+const _origRenderYears = renderYears;
+renderYears = function() { _origRenderYears(); saveGlobals({ years: state.years }); };
+
+initGlobals({
+  onBrand: (brand) => {
+    const sel = document.getElementById('inBrand');
+    const opt = [...sel.options].find(o => o.value.toLowerCase() === brand.toLowerCase());
+    if (opt) sel.value = opt.value;
+  },
+  onYears: (years) => { state.years = [...years]; _origRenderYears(); },
+  onMMCs:  (mmcs)  => { state.mmcs  = [...mmcs];  renderMMCs(); },
+  onTrimPairs: () => updateTrimSource(),
+});
+
+updateTrimSource();
+</script>
+</body>
+</html>
