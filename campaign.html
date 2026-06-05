@@ -109,6 +109,48 @@
 
   /* TOOL LINKS */
   .tool-links { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+
+  /* MERGE SECTION */
+  .merge-section {
+    border-top: 2px solid var(--border2); padding: 28px 32px;
+    display: none; flex-direction: column; gap: 20px;
+  }
+  .merge-section.open { display: flex; }
+  .merge-header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .merge-title { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted2); flex: 1; }
+
+  .merge-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .merge-col { display: flex; flex-direction: column; gap: 8px; }
+  .merge-col-title {
+    font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; padding-bottom: 6px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 7px;
+  }
+
+  .merge-results { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .merge-result-col { display: flex; flex-direction: column; gap: 6px; }
+  .merge-result-title {
+    font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 5px; border-bottom: 1px solid var(--border);
+  }
+  .merge-stat { font-family: var(--mono); font-size: 11px; color: var(--muted2); }
+  .merge-stat b { color: var(--text); }
+  .merge-stat.new { color: var(--success); }
+  .merge-stat.dup { color: var(--muted); }
+  .merge-copy-btn {
+    font-family: var(--mono); font-size: 10px; background: transparent;
+    border: 1px solid var(--border2); color: var(--muted);
+    border-radius: 3px; padding: 2px 8px; cursor: pointer; transition: all 0.1s;
+  }
+  .merge-copy-btn:hover { color: var(--text); border-color: var(--muted2); }
+  .merge-preview {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+    padding: 8px 10px; font-family: var(--mono); font-size: 10px; color: var(--muted2);
+    max-height: 140px; overflow-y: auto; line-height: 1.8;
+  }
+  .merge-row-new { color: var(--success); }
+  .merge-row-dup { color: var(--muted); }
   .tool-link {
     display: flex; flex-direction: column; gap: 3px;
     font-family: var(--mono); font-size: 11px; text-decoration: none;
@@ -209,6 +251,7 @@
       <button class="btn btn-accent" onclick="loadAll()">⚡ Load into all tools</button>
       <button class="btn btn-danger btn-sm" onclick="clearAll()">↺ Clear all</button>
       <span id="loadStatus"></span>
+      <button class="btn btn-sm" onclick="toggleMerge()" id="mergeToggleBtn" style="margin-left:auto;border-color:rgba(0,200,255,0.35);color:var(--accent2)" onmouseover="this.style.background='rgba(0,200,255,0.07)'" onmouseout="this.style.background='transparent'">⊕ Merge with existing data</button>
     </div>
 
   </div>
@@ -262,6 +305,56 @@
     </div>
 
   </div>
+</div>
+
+<!-- MERGE SECTION ─────────────────────────────────────────────────────────── -->
+<div class="merge-section" id="mergeSection">
+
+  <div class="merge-header">
+    <div class="merge-title">⊕ Merge new data with existing DB records</div>
+    <span style="font-family:var(--mono);font-size:10px;color:var(--muted)">Exterior &amp; Interior colors are applied to <b style="color:var(--text)">all model names</b> from the MMC/Models section</span>
+    <button onclick="runMerge()" style="background:var(--accent2);color:#000;border:none;font-family:var(--mono);font-size:11px;font-weight:600;padding:6px 16px;border-radius:4px;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase">⚡ Generate merge</button>
+  </div>
+
+  <!-- PASTE EXISTING DATA FROM EXCEL -->
+  <div style="font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.7">
+    Paste directly from Excel — with or without header row. Columns must be in this order:
+  </div>
+  <div class="merge-grid">
+    <div class="merge-col">
+      <div class="merge-col-title">
+        <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--c-trim)"></span>
+        Existing Trim data
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px">BRAND &nbsp;·&nbsp; MODEL_YR &nbsp;·&nbsp; MMC &nbsp;·&nbsp; TRIM &nbsp;·&nbsp; TRIM_TEXT</div>
+      <textarea id="exist-trim" rows="6" placeholder="BRAND	MODEL_YR	MMC	TRIM	TRIM_TEXT&#10;GMC	2025	TC10543	3SA	SLE&#10;GMC	2025	TC10543	3SB	SLT" style="font-size:11px;line-height:1.7"></textarea>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted)" id="cnt-exist-trim">—</div>
+    </div>
+    <div class="merge-col">
+      <div class="merge-col-title">
+        <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--c-ext)"></span>
+        Existing Exterior data
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px">BRAND &nbsp;·&nbsp; MODEL_YR &nbsp;·&nbsp; VEH_NAME_PLATE &nbsp;·&nbsp; DERIVED_FIELDS1 &nbsp;·&nbsp; EXTERIOR_TEXT</div>
+      <textarea id="exist-ext" rows="6" placeholder="BRAND	MODEL_YR	VEH_NAME_PLATE	DERIVED_FIELDS1	EXTERIOR_TEXT&#10;GMC	2025	Sierra 1500	GAZ	Summit White" style="font-size:11px;line-height:1.7"></textarea>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted)" id="cnt-exist-ext">—</div>
+    </div>
+    <div class="merge-col">
+      <div class="merge-col-title">
+        <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--c-int)"></span>
+        Existing Interior data
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px">BRAND &nbsp;·&nbsp; MODEL_YR &nbsp;·&nbsp; VEH_NAME_PLATE &nbsp;·&nbsp; INTERIOR_CODE &nbsp;·&nbsp; INTERIOR_TEXT</div>
+      <textarea id="exist-int" rows="6" placeholder="BRAND	MODEL_YR	VEH_NAME_PLATE	INTERIOR_CODE	INTERIOR_TEXT&#10;GMC	2025	Sierra 1500	H2G	Jet Black Vinyl" style="font-size:11px;line-height:1.7"></textarea>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted)" id="cnt-exist-int">—</div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="merge-results" id="mergeResults" style="display:none">
+    <!-- filled by runMerge() -->
+  </div>
+
 </div>
 
 <script>
@@ -478,6 +571,210 @@ function renderHeaderStatus() {
   ['mmc','trim','ext','int'].forEach(s => updatePreview(s));
   renderHeaderStatus();
 })();
+
+// ── MERGE ──────────────────────────────────────────────────────────────────
+
+function toggleMerge() {
+  const sec = document.getElementById('mergeSection');
+  const btn = document.getElementById('mergeToggleBtn');
+  const open = sec.classList.toggle('open');
+  btn.textContent = open ? '⊗ Close merge' : '⊕ Merge with existing data';
+  if (open) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function trimAppliesTo(pair, mmc) {
+  if (pair.filterMode === 'all')     return true;
+  if (pair.filterMode === 'only')    return (pair.filterMMCs || []).includes(mmc.toUpperCase());
+  if (pair.filterMode === 'exclude') return !(pair.filterMMCs || []).includes(mmc.toUpperCase());
+  return true;
+}
+
+// Parse TSV pasted from Excel. Columns are positional (order matters).
+// Accepts with or without a header row — if first cell matches a known field name it's skipped.
+function parseTSV(raw, fields) {
+  const lines = raw.trim().split('\n').map(l => l.trimEnd()).filter(Boolean);
+  if (!lines.length) return [];
+
+  // Detect header row: if the first tab-cell matches any field name (case-insensitive)
+  const firstCell = lines[0].split('\t')[0].trim().toUpperCase();
+  const knownFields = fields.map(f => f.toUpperCase());
+  const startIdx = knownFields.includes(firstCell) ? 1 : 0;
+
+  return lines.slice(startIdx).map(line => {
+    const cols = line.split('\t');
+    const obj = {};
+    fields.forEach((f, i) => { obj[f] = (cols[i] || '').trim(); });
+    return obj;
+  }).filter(r => fields.some(f => r[f])); // skip fully empty rows
+}
+
+// Live row counter for exist textareas
+['trim','ext','int'].forEach(type => {
+  const fields = {
+    trim: ['BRAND','MODEL_YR','MMC','TRIM','TRIM_TEXT'],
+    ext:  ['BRAND','MODEL_YR','VEH_NAME_PLATE','DERIVED_FIELDS1','EXTERIOR_TEXT'],
+    int:  ['BRAND','MODEL_YR','VEH_NAME_PLATE','INTERIOR_CODE','INTERIOR_TEXT'],
+  }[type];
+  const ta = document.getElementById(`exist-${type}`);
+  const cnt = document.getElementById(`cnt-exist-${type}`);
+  if (ta && cnt) {
+    ta.addEventListener('input', () => {
+      const rows = parseTSV(ta.value, fields);
+      cnt.textContent = rows.length ? `${rows.length} rows detected` : '—';
+    });
+  }
+});
+
+function toNum(v) { return isNaN(parseInt(v)) ? v : parseInt(v); }
+
+function runMerge() {
+  const g = getGlobals();
+  const brand      = g.brand || '';
+  const years      = g.years || [];
+  const trimPairs  = g.trimPairs || [];
+  const extPairs   = g.exteriorPairs || [];
+  const intPairs   = g.interiorPairs || [];
+  const mmcMap     = g.mmcModelMap || {};
+  const modelNames = [...new Set(Object.values(mmcMap))]; // unique nameplates
+
+  if (!brand || !years.length) {
+    alert('Load Brand and Model Year(s) via Campaign Setup first, then press "Load into all tools".');
+    return;
+  }
+
+  // ── Generate new candidate records ────────────────────────────────────────
+
+  const newTrim = [], newExt = [], newInt = [];
+
+  for (const yr of years) {
+    // Trims: brand × year × MMC (filtered by pair.filterMode) × trim
+    for (const [mmc] of Object.entries(mmcMap)) {
+      for (const p of trimPairs) {
+        if (trimAppliesTo(p, mmc)) {
+          newTrim.push({ BRAND: brand, MODEL_YR: toNum(yr), MMC: mmc, TRIM: p.trim, TRIM_TEXT: p.text });
+        }
+      }
+    }
+    // Exterior: brand × year × ALL model names × ext color
+    for (const name of modelNames) {
+      for (const p of extPairs) {
+        newExt.push({ BRAND: brand, MODEL_YR: String(yr), VEH_NAME_PLATE: name, DERIVED_FIELDS1: p.code, EXTERIOR_TEXT: p.name });
+      }
+      // Interior: brand × year × ALL model names × int color
+      for (const p of intPairs) {
+        newInt.push({ BRAND: brand, MODEL_YR: String(yr), VEH_NAME_PLATE: name, INTERIOR_CODE: p.code, INTERIOR_TEXT: p.text });
+      }
+    }
+  }
+
+  // ── Parse existing data ───────────────────────────────────────────────────
+
+  const trimFields = ['BRAND','MODEL_YR','MMC','TRIM','TRIM_TEXT'];
+  const extFields  = ['BRAND','MODEL_YR','VEH_NAME_PLATE','DERIVED_FIELDS1','EXTERIOR_TEXT'];
+  const intFields  = ['BRAND','MODEL_YR','VEH_NAME_PLATE','INTERIOR_CODE','INTERIOR_TEXT'];
+
+  const existTrim = parseTSV(document.getElementById('exist-trim').value, trimFields);
+  const existExt  = parseTSV(document.getElementById('exist-ext').value,  extFields);
+  const existInt  = parseTSV(document.getElementById('exist-int').value,  intFields);
+
+  // ── Build lookup keys ─────────────────────────────────────────────────────
+
+  const keyTrim = r => `${String(r.BRAND).toUpperCase()}|${r.MODEL_YR}|${String(r.MMC).toUpperCase()}|${String(r.TRIM).toUpperCase()}`;
+  const keyExt  = r => `${String(r.BRAND).toUpperCase()}|${r.MODEL_YR}|${String(r.VEH_NAME_PLATE).toUpperCase()}|${String(r.DERIVED_FIELDS1).toUpperCase()}`;
+  const keyInt  = r => `${String(r.BRAND).toUpperCase()}|${r.MODEL_YR}|${String(r.VEH_NAME_PLATE).toUpperCase()}|${String(r.INTERIOR_CODE).toUpperCase()}`;
+
+  const setTrim = new Set(existTrim.map(keyTrim));
+  const setExt  = new Set(existExt.map(keyExt));
+  const setInt  = new Set(existInt.map(keyInt));
+
+  const onlyNewTrim = newTrim.filter(r => !setTrim.has(keyTrim(r)));
+  const onlyNewExt  = newExt.filter(r  => !setExt.has(keyExt(r)));
+  const onlyNewInt  = newInt.filter(r  => !setInt.has(keyInt(r)));
+
+  const dupTrim = newTrim.length - onlyNewTrim.length;
+  const dupExt  = newExt.length  - onlyNewExt.length;
+  const dupInt  = newInt.length  - onlyNewInt.length;
+
+  // ── Render results ────────────────────────────────────────────────────────
+
+  const sections = [
+    {
+      id: 'mrg-trim', label: 'Trim', color: 'var(--c-trim)',
+      newRecs: onlyNewTrim, total: newTrim.length, dups: dupTrim,
+      fields: ['BRAND','MODEL_YR','MMC','TRIM','TRIM_TEXT'],
+    },
+    {
+      id: 'mrg-ext', label: 'Exterior', color: 'var(--c-ext)',
+      newRecs: onlyNewExt, total: newExt.length, dups: dupExt,
+      fields: ['BRAND','MODEL_YR','VEH_NAME_PLATE','DERIVED_FIELDS1','EXTERIOR_TEXT'],
+    },
+    {
+      id: 'mrg-int', label: 'Interior', color: 'var(--c-int)',
+      newRecs: onlyNewInt, total: newInt.length, dups: dupInt,
+      fields: ['BRAND','MODEL_YR','VEH_NAME_PLATE','INTERIOR_CODE','INTERIOR_TEXT'],
+    },
+  ];
+
+  // Store for copy
+  window._mergeNew = { trim: onlyNewTrim, ext: onlyNewExt, int: onlyNewInt };
+  window._mergeFull = {
+    trim: [...existTrim, ...onlyNewTrim],
+    ext:  [...existExt,  ...onlyNewExt],
+    int:  [...existInt,  ...onlyNewInt],
+  };
+
+  const resultsEl = document.getElementById('mergeResults');
+  resultsEl.style.display = 'grid';
+  resultsEl.innerHTML = sections.map(s => {
+    const preview = s.newRecs.slice(0, 8).map(r =>
+      `<div class="merge-row-new">${s.fields.map(f => r[f] ?? '').join(' · ')}</div>`
+    ).join('') + (s.newRecs.length > 8 ? `<div style="color:var(--muted)">… and ${s.newRecs.length - 8} more</div>` : '');
+
+    return `
+      <div class="merge-result-col">
+        <div class="merge-result-title">
+          <span style="display:flex;align-items:center;gap:6px">
+            <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:${s.color}"></span>
+            <span style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted2)">${s.label}</span>
+          </span>
+          <div style="display:flex;gap:5px">
+            <button class="merge-copy-btn" onclick="copyMergeNew('${s.id.split('-')[1]}')">⎘ New only</button>
+            <button class="merge-copy-btn" onclick="copyMergeFull('${s.id.split('-')[1]}')">⎘ Full merge</button>
+          </div>
+        </div>
+        <div class="merge-stat new">✓ <b>${s.newRecs.length}</b> new record${s.newRecs.length !== 1 ? 's' : ''}</div>
+        <div class="merge-stat dup">= <b>${s.dups}</b> already existed</div>
+        <div class="merge-preview">${s.newRecs.length ? preview : '<span style="color:var(--muted)">— no new records —</span>'}</div>
+      </div>`;
+  }).join('');
+}
+
+const _mergeFields = {
+  trim: ['BRAND','MODEL_YR','MMC','TRIM','TRIM_TEXT'],
+  ext:  ['BRAND','MODEL_YR','VEH_NAME_PLATE','DERIVED_FIELDS1','EXTERIOR_TEXT'],
+  int:  ['BRAND','MODEL_YR','VEH_NAME_PLATE','INTERIOR_CODE','INTERIOR_TEXT'],
+};
+
+function recsToTSV(recs, type) {
+  const fields = _mergeFields[type];
+  return recs.map(r => fields.map(f => r[f] ?? '').join('\t')).join('\n');
+}
+
+function copyMergeNew(type) {
+  const recs = window._mergeNew?.[type];
+  if (!recs || !recs.length) return;
+  navigator.clipboard.writeText(recsToTSV(recs, type)).then(() => {
+    const btn = event.target; btn.textContent = '✓ Copied'; setTimeout(() => btn.textContent = '⎘ New only', 2000);
+  });
+}
+
+function copyMergeFull(type) {
+  const recs = window._mergeFull?.[type];
+  if (!recs || !recs.length) return;
+  navigator.clipboard.writeText(recsToTSV(recs, type)).then(() => {
+    const btn = event.target; btn.textContent = '✓ Copied'; setTimeout(() => btn.textContent = '⎘ Full merge', 2000);
+  });
+}
 </script>
 </body>
 </html>
