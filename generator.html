@@ -321,8 +321,12 @@
           <input type="text" id="loyaltyFlag" value="N">
         </div>
       </div>
-      <label>RPO String</label>
-      <textarea id="rpoString" rows="2" style="resize:vertical">1SP1SZ4JTA2XA45A50AS8ASDAT9ATHATNB30B58BTVBVEC3QC3UC6GCJ2CTBCWAD07DD8DXRE2CEF7ENLFE9G1WG86GU5HVAIVEJ25KA1KA6KC4KI3KI4KNPKSGKW5L84MAHMHSN10N37R6QR9ZSFESGFSLLT40TAUTB5TGETQ5U2KUE1UEUUFBUG1UGNUK3UKIUKKUKMUKTUKZUOWUQSURFURWUTJUV2UVZV54VK3VV4WMZX88XCGY55</textarea>
+      <div class="grid2">
+        <div>
+          <label>Campaign Prefix</label>
+          <input type="text" id="campaignPrefix" value="CANS" placeholder="CANS" style="text-transform:uppercase">
+        </div>
+      </div>
     </div>
 
     <!-- CUSTOMER & DEALER -->
@@ -592,31 +596,29 @@ function generate() {
   const validCombos = parseCombosFromTextarea();
   if (!validCombos.length) { alert('Add at least one combination in the combinations field.'); return; }
 
+  const prefix = getVal('campaignPrefix') || 'CANS';
+
   const base = {
-    orderNbr: getVal('orderNbr'),
-    modelYear: getVal('modelYear'),
-    marketingModel: getVal('marketingModel'),
-    marketingMake: getVal('marketingMake'),
+    orderNbr:        getVal('orderNbr'),
+    modelYear:       getVal('modelYear'),
+    marketingModel:  getVal('marketingModel'),
+    marketingMake:   getVal('marketingMake'),
     loyaltyMemberFlag: getVal('loyaltyFlag'),
-    rpoString: getVal('rpoString'),
-    programIdentifier: '',
     campaignIdentifier: getVal('campaignId'),
-    firstName: getVal('firstName'),
-    lastName: getVal('lastName'),
-    email: getVal('email'),
-    dealerCity: getVal('dealerCity'),
+    firstName:   getVal('firstName'),
+    lastName:    getVal('lastName'),
+    email:       getVal('email'),
+    dealerCity:  getVal('dealerCity'),
     dealerState: getVal('dealerState'),
-    dealerZip: getVal('dealerZip'),
-    dealerURL: (u => u && !u.match(/^https?:\/\//) ? 'https://' + u : u)(getVal('dealerURL')),
+    dealerZip:   getVal('dealerZip'),
+    dealerURL:   (u => u && !u.match(/^https?:\/\//) ? 'https://' + u : u)(getVal('dealerURL')),
     dealerPhone: getVal('dealerPhone'),
-    dealerName: getVal('dealerName'),
+    dealerName:  getVal('dealerName'),
     dealerAddress: getVal('dealerAddress'),
   };
 
   const msgIdStart = parseInt(getVal('messageId')) || 1;
   const delivLabel = getVal('deliveryLabel');
-  const brandAbbr = { CHEVROLET: 'CH', GMC: 'GM', BUICK: 'BU', CADILLAC: 'CA' };
-  const abbr = brandAbbr[base.marketingMake] || base.marketingMake;
 
   // Group combos by effective model name, preserving insertion order
   const modelGroups = new Map();
@@ -635,7 +637,12 @@ function generate() {
       for (const loyaltyFlag of loyaltyVariants) {
         const combo    = rand(groupCombos);
         const intColor = rand(interiorColors);
-        const subjectLine = `${ec}_${base.modelYear}_${abbr}_${modelName.replace(/\s+/g,'_')}_${combo.model}_${intColor}_${combo.ext}_${combo.trim}`;
+
+        // VERSION_NAME: CANS | brand | eventCode | modelYear | modelName
+        const versionName = `${prefix} | ${base.marketingMake} | ${ec} | ${base.modelYear} | ${modelName}`;
+        // subjectLine: versionName + trim + extColor + interior
+        const subjectLine = `${versionName}_${combo.trim}_${combo.ext}_${intColor}`;
+
         records.push({
           subjectLine,
           message: {
@@ -647,13 +654,14 @@ function generate() {
           },
           targetData: {
             ...base,
+            VERSION_NAME: versionName,
             marketingModel: modelName,
             loyaltyMemberFlag: loyaltyFlag,
             eventCode: ec,
             trim: combo.trim,
             exteriorColor: combo.ext,
             merchandisingModelCode: combo.model,
-            interiorColor: intColor,
+            interior: intColor,
           }
         });
         msgIdx++;
