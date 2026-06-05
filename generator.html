@@ -330,9 +330,8 @@
           <input type="text" id="touch" value="CANS_SEEDS">
         </div>
       </div>
-      <div style="margin-bottom:12px">
-        <label>VIN</label>
-        <input type="text" id="vin" value="1G1TSTR86TE900001">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:12px">
+        ⟳ <b style="color:var(--muted2)">VIN</b> generated randomly per record (GM format, year-coded)
       </div>
       <!-- RANDOM DEALER PREVIEW -->
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:12px 14px;margin-bottom:4px">
@@ -639,6 +638,26 @@ function randLabel() {
   return s;
 }
 
+// VIN: GM format, 17 chars, year-coded  →  e.g. 1G1TSTR86TE900001
+const _vinYearCodes = {
+  '2015':'F','2016':'G','2017':'H','2018':'J','2019':'K','2020':'L',
+  '2021':'M','2022':'N','2023':'P','2024':'R','2025':'S','2026':'T',
+  '2027':'V','2028':'W','2029':'X','2030':'Y'
+};
+function randVIN(modelYear) {
+  const alpha  = 'ABCDEFGHJKLMNPRSTUVWXYZ';
+  const alnum  = 'ABCDEFGHJKLMNPRSTUVWXYZ0123456789';
+  const digits = '0123456789';
+  const r = (set) => set[Math.floor(Math.random() * set.length)];
+  const yearCode = _vinYearCodes[String(modelYear)] || 'T';
+  const wmi  = '1G' + r(alpha);                                    // World Manufacturer ID
+  const vds  = Array.from({length:5}, () => r(alnum)).join('');    // Vehicle Descriptor
+  const check = r(digits);                                          // Check digit
+  const plant = r(alpha);                                           // Plant code
+  const seq   = Array.from({length:6}, () => r(digits)).join('');  // Sequence
+  return wmi + vds + check + yearCode + plant + seq;
+}
+
 // pairs loaded directly via textarea
 
 
@@ -659,9 +678,8 @@ function generate() {
     loyaltyMemberFlag: getVal('loyaltyFlag'),
     Email:            getVal('email'),
     Touch:            getVal('touch'),
-    VIN:              getVal('vin'),
   };
-  // firstName and dealer are randomized per record from the pools
+  // firstName, dealer, VIN and orderNbr are randomized per record from the pools
 
   const msgIdStart = parseInt(getVal('messageId')) || 1;
 
@@ -721,7 +739,7 @@ function generate() {
             trim:                   combo.trim,
             marketingMake:          base.marketingMake,
             marketingModel:         modelName,
-            VIN:                    base.VIN,
+            VIN:                    randVIN(base.modelYear),
             eventCode:              ec,
             Email:                  base.Email,
             loyaltyMemberFlag:      loyaltyFlag,
