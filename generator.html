@@ -322,65 +322,26 @@
       <div class="section-title">Customer & Dealer</div>
       <div class="grid2">
         <div>
-          <label>First Name</label>
-          <input type="text" id="firstName" value="Amelia">
-        </div>
-        <div>
           <label>Email</label>
           <input type="email" id="email" value="gmtestsemails@rapp.com">
         </div>
-      </div>
-      <div class="grid2">
         <div>
           <label>Touch</label>
           <input type="text" id="touch" value="CANS_SEEDS">
         </div>
-        <div>
-          <label>VIN</label>
-          <input type="text" id="vin" value="1G1TSTR86TE900001">
-        </div>
       </div>
-      <!-- DEALER PASTE -->
-      <div style="margin-bottom:14px">
-        <label>Paste dealer info (one line per field)</label>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:6px">Order: Name / BAC / Address / City / State / ZIP / Phone / URL</div>
-        <textarea id="dealerPaste" rows="5" placeholder="Chevrolet Of Bellevue&#10;225875&#10;13400 Ne 20th St&#10;Bellevue&#10;WA&#10;98005&#10;4254548931&#10;https://www.chevroletofbellevue.com" style="resize:vertical;width:100%;font-size:12px;"></textarea>
-        <button class="btn btn-sm" onclick="parseDealerPaste()" style="margin-top:6px;width:100%">↑ Load dealer data</button>
+      <div style="margin-bottom:12px">
+        <label>VIN</label>
+        <input type="text" id="vin" value="1G1TSTR86TE900001">
       </div>
-      <label>Dealer Name</label>
-      <input type="text" id="dealerName" value="Chevrolet Of Bellevue">
-      <div class="grid2">
-        <div>
-          <label>Dealer BAC</label>
-          <input type="text" id="dealerBAC" value="225875">
+      <!-- RANDOM DEALER PREVIEW -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:12px 14px;margin-bottom:4px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <span style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted2)">⟳ Random per record</span>
+          <button class="btn btn-sm" onclick="refreshDealerPreview()" style="font-size:10px;padding:3px 9px">↺ Preview</button>
         </div>
-        <div>
-          <label>Dealer Address</label>
-          <input type="text" id="dealerAddress" value="13400 Ne 20th St">
-        </div>
-      </div>
-      <div class="grid3">
-        <div>
-          <label>City</label>
-          <input type="text" id="dealerCity" value="Bellevue">
-        </div>
-        <div>
-          <label>State</label>
-          <input type="text" id="dealerState" value="WA">
-        </div>
-        <div>
-          <label>ZIP</label>
-          <input type="text" id="dealerZip" value="98005">
-        </div>
-      </div>
-      <div class="grid2">
-        <div>
-          <label>Dealer Phone</label>
-          <input type="tel" id="dealerPhone" value="4254548931">
-        </div>
-        <div>
-          <label>Dealer URL</label>
-          <input type="text" id="dealerURL" value="https://www.chevroletofbellevue.com">
+        <div id="dealerPreview" style="font-family:var(--mono);font-size:11px;color:var(--muted2);line-height:1.9">
+          — press Preview or Generate to sample —
         </div>
       </div>
     </div>
@@ -460,6 +421,90 @@
 </div>
 
 <script>
+// ─── RANDOM DATA POOLS ────────────────────────────────────────────────────────
+
+const FIRST_NAMES = [
+  'James','Mary','John','Patricia','Robert','Jennifer','Michael','Linda','William','Barbara',
+  'David','Susan','Richard','Jessica','Joseph','Sarah','Thomas','Karen','Charles','Lisa',
+  'Christopher','Nancy','Daniel','Betty','Matthew','Margaret','Anthony','Sandra','Mark','Ashley',
+  'Donald','Dorothy','Steven','Kimberly','Paul','Emily','Andrew','Donna','Joshua','Michelle',
+  'Kenneth','Carol','Kevin','Amanda','Brian','Melissa','George','Deborah','Timothy','Stephanie',
+  'Ronald','Rebecca','Edward','Laura','Jason','Sharon','Jeffrey','Cynthia','Ryan','Kathleen',
+  'Jacob','Amy','Gary','Angela','Nicholas','Shirley','Eric','Anna','Jonathan','Brenda',
+  'Stephen','Pamela','Larry','Emma','Justin','Nicole','Scott','Ruth','Brandon','Katherine'
+];
+
+const DEALER_POOLS = {
+  Chevrolet: [
+    { name:'Chevrolet Of Bellevue',       BAC:'225875', address:'13400 NE 20th St',         city:'Bellevue',     state:'WA', zip:'98005', phone:'4254548931', url:'https://www.chevroletofbellevue.com' },
+    { name:'Hendrick Chevrolet',           BAC:'114823', address:'6230 E Independence Blvd', city:'Charlotte',    state:'NC', zip:'28212', phone:'7043716000', url:'https://www.hendrickchevy.com' },
+    { name:'Serra Chevrolet',              BAC:'320451', address:'2505 Acton Rd',            city:'Birmingham',   state:'AL', zip:'35243', phone:'2059674800', url:'https://www.serrachevrolet.com' },
+    { name:'Patty Peck Chevrolet',         BAC:'417630', address:'4900 E County Line Rd',    city:'Ridgeland',    state:'MS', zip:'39157', phone:'6019572273', url:'https://www.pattypeck.com' },
+    { name:'Courtesy Chevrolet',           BAC:'512388', address:'1233 E Camelback Rd',      city:'Phoenix',      state:'AZ', zip:'85014', phone:'6023420101', url:'https://www.courtesychevrolet.com' },
+    { name:'Jim Trenary Chevrolet',        BAC:'638920', address:'200 Professional Pkwy',    city:'Troy',         state:'MO', zip:'63379', phone:'6364623332', url:'https://www.jimtrenarychevrolet.com' },
+    { name:'Stingray Chevrolet',           BAC:'721045', address:'2002 S US Hwy 92',         city:'Plant City',   state:'FL', zip:'33566', phone:'8136597888', url:'https://www.stingraychevrolet.com' },
+    { name:'Landers Chevrolet',            BAC:'844217', address:'6300 Landers Rd',          city:'North Little Rock', state:'AR', zip:'72117', phone:'5018359000', url:'https://www.landerschevrolet.com' },
+    { name:'Gwatney Chevrolet',            BAC:'951334', address:'11201 Maumelle Blvd',      city:'North Little Rock', state:'AR', zip:'72113', phone:'5018352000', url:'https://www.gwatneyfleet.com' },
+    { name:'Ron Tonkin Chevrolet',         BAC:'108765', address:'9150 SE 82nd Ave',         city:'Happy Valley',  state:'OR', zip:'97086', phone:'5036596000', url:'https://www.rontonkinchevy.com' },
+  ],
+  GMC: [
+    { name:'Burien GMC',                   BAC:'231056', address:'14900 1st Ave S',           city:'Burien',       state:'WA', zip:'98168', phone:'2065249000', url:'https://www.buriengmc.com' },
+    { name:'Hendrick GMC',                 BAC:'344812', address:'7800 E Independence Blvd', city:'Charlotte',    state:'NC', zip:'28227', phone:'7044783700', url:'https://www.hendrickgmc.com' },
+    { name:'Landers GMC',                  BAC:'456731', address:'6400 Landers Rd',          city:'North Little Rock', state:'AR', zip:'72117', phone:'5018359100', url:'https://www.landersgmc.com' },
+    { name:'Serra GMC',                    BAC:'567293', address:'1600 Montgomery Hwy',      city:'Hoover',       state:'AL', zip:'35216', phone:'2058237000', url:'https://www.serragmc.com' },
+    { name:'Courtesy GMC',                 BAC:'678540', address:'1235 E Camelback Rd',      city:'Phoenix',      state:'AZ', zip:'85014', phone:'6023420200', url:'https://www.courtesygmc.com' },
+    { name:'Findlay GMC',                  BAC:'789112', address:'7494 Eastgate Rd',         city:'Henderson',    state:'NV', zip:'89011', phone:'7026572800', url:'https://www.findlaygmc.com' },
+    { name:'Bob Moore GMC',                BAC:'890234', address:'13400 Broadway Ext',       city:'Oklahoma City', state:'OK', zip:'73114', phone:'4058440800', url:'https://www.bobmooregmc.com' },
+    { name:'Rick Hendrick GMC',            BAC:'912847', address:'5925 N Tryon St',          city:'Charlotte',    state:'NC', zip:'28213', phone:'7044944200', url:'https://www.rickhendrickgmc.com' },
+    { name:'Ourisman GMC',                 BAC:'134562', address:'4400 Branch Ave',          city:'Temple Hills', state:'MD', zip:'20748', phone:'3015998000', url:'https://www.ourisman.com' },
+    { name:'Chapman GMC',                  BAC:'245871', address:'900 E Camelback Rd',       city:'Phoenix',      state:'AZ', zip:'85014', phone:'6022642500', url:'https://www.chapmangmc.com' },
+  ],
+  Buick: [
+    { name:'Hendrick Buick',               BAC:'358120', address:'6230 E Independence Blvd', city:'Charlotte',    state:'NC', zip:'28212', phone:'7043711500', url:'https://www.hendrickbuick.com' },
+    { name:'Serra Buick',                  BAC:'469035', address:'2405 Acton Rd',            city:'Birmingham',   state:'AL', zip:'35243', phone:'2059674900', url:'https://www.serrabuick.com' },
+    { name:'Hubler Buick',                 BAC:'571823', address:'6310 Southeastern Ave',    city:'Indianapolis', state:'IN', zip:'46203', phone:'3177841700', url:'https://www.hublerbuick.com' },
+    { name:'Ourisman Buick',               BAC:'682341', address:'5901 Marlboro Pike',       city:'District Heights', state:'MD', zip:'20747', phone:'3017356800', url:'https://www.ourismanbuick.com' },
+    { name:'Dahl Buick',                   BAC:'793054', address:'3407 Market St',           city:'La Crosse',    state:'WI', zip:'54601', phone:'6087874100', url:'https://www.dahlbuick.com' },
+    { name:'Betten Baker Buick',           BAC:'804217', address:'3900 Division Ave S',      city:'Grand Rapids', state:'MI', zip:'49548', phone:'6166820880', url:'https://www.bettenbaker.com' },
+    { name:'Gillman Buick',                BAC:'915630', address:'6767 Southwest Fwy',       city:'Houston',      state:'TX', zip:'77074', phone:'7136622000', url:'https://www.gillmanbuick.com' },
+    { name:'Sewell Buick',                 BAC:'127843', address:'7111 Lemmon Ave',          city:'Dallas',       state:'TX', zip:'75209', phone:'2146916600', url:'https://www.sewellbuick.com' },
+    { name:'Ray Skillman Buick',           BAC:'238956', address:'4520 S Emerson Ave',       city:'Indianapolis', state:'IN', zip:'46203', phone:'3178815000', url:'https://www.rayskillmanbuick.com' },
+    { name:'Napleton Buick',               BAC:'349067', address:'7820 W 159th St',          city:'Tinley Park',  state:'IL', zip:'60477', phone:'7086331100', url:'https://www.napletonbuick.com' },
+  ],
+  Cadillac: [
+    { name:'Cadillac Of Bellevue',         BAC:'461278', address:'13427 NE 20th St',         city:'Bellevue',     state:'WA', zip:'98005', phone:'4252223000', url:'https://www.cadillacofbellevue.com' },
+    { name:'Sewell Cadillac',              BAC:'572389', address:'7111 Lemmon Ave',          city:'Dallas',       state:'TX', zip:'75209', phone:'2146916800', url:'https://www.sewellcadillac.com' },
+    { name:'Hendrick Cadillac',            BAC:'683401', address:'6225 E Independence Blvd', city:'Charlotte',    state:'NC', zip:'28212', phone:'7049726600', url:'https://www.hendrickcadillac.com' },
+    { name:'Castle Cadillac',              BAC:'794512', address:'3630 N Harlem Ave',        city:'Chicago',      state:'IL', zip:'60634', phone:'7733858400', url:'https://www.castlecadillac.com' },
+    { name:'Manhattan Cadillac',           BAC:'815623', address:'787 11th Ave',             city:'New York',     state:'NY', zip:'10019', phone:'2129418000', url:'https://www.manhattancadillac.com' },
+    { name:'Crest Cadillac',              BAC:'926734', address:'1100 W 190th St',           city:'Torrance',     state:'CA', zip:'90502', phone:'3107699100', url:'https://www.crestcadillac.com' },
+    { name:'Prestige Cadillac',            BAC:'137845', address:'2550 Rte 22 W',            city:'Union',        state:'NJ', zip:'07083', phone:'9086248000', url:'https://www.prestigecadillac.com' },
+    { name:'Park Place Cadillac',          BAC:'248956', address:'6085 LBJ Fwy',             city:'Dallas',       state:'TX', zip:'75240', phone:'9727448600', url:'https://www.parkplacecadillac.com' },
+    { name:'Stalker Cadillac',             BAC:'350167', address:'35600 Michigan Ave',       city:'Wayne',        state:'MI', zip:'48184', phone:'7349467000', url:'https://www.stalkercadillac.com' },
+    { name:'Massey Cadillac',              BAC:'461278', address:'4400 E Colonial Dr',       city:'Orlando',      state:'FL', zip:'32803', phone:'4078977000', url:'https://www.masseycadillac.com' },
+  ],
+};
+
+function randDealer(brand) {
+  const pool = DEALER_POOLS[brand] || DEALER_POOLS.Chevrolet;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function randFirstName() {
+  return FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
+}
+
+function refreshDealerPreview() {
+  const brand = document.getElementById('marketingMake').value;
+  const d = randDealer(brand);
+  const name = randFirstName();
+  document.getElementById('dealerPreview').innerHTML =
+    `<span style="color:var(--text)">${name}</span> &nbsp;·&nbsp; ` +
+    `<span style="color:var(--accent2)">${d.name}</span><br>` +
+    `<span style="color:var(--muted)">${d.address}, ${d.city}, ${d.state} ${d.zip}</span><br>` +
+    `<span style="color:var(--muted)">BAC ${d.BAC} &nbsp;·&nbsp; ${d.phone}</span>`;
+}
+
 // ─── STATE ───────────────────────────────────────────────────────────────────
 let eventCodes = ["00","30","34","38","40","42A","42B","42C","43","48","50","TB1","TB2","TB3","TB4","TB5","TB6","TB7"];
 let interiorColors = [];
@@ -597,21 +642,6 @@ function randLabel() {
 // pairs loaded directly via textarea
 
 
-function parseDealerPaste() {
-  const raw = document.getElementById('dealerPaste').value.trim();
-  if (!raw) return;
-  const lines = raw.split('\n').map(l => l.trim());
-  // Order: Name / BAC / Address / City / State / ZIP / Phone / URL
-  if (lines[0]) document.getElementById('dealerName').value    = lines[0];
-  if (lines[1]) document.getElementById('dealerBAC').value     = lines[1];
-  if (lines[2]) document.getElementById('dealerAddress').value = lines[2];
-  if (lines[3]) document.getElementById('dealerCity').value    = lines[3];
-  if (lines[4]) document.getElementById('dealerState').value   = lines[4];
-  if (lines[5]) document.getElementById('dealerZip').value     = lines[5];
-  if (lines[6]) document.getElementById('dealerPhone').value   = lines[6];
-  if (lines[7]) document.getElementById('dealerURL').value     = lines[7];
-  document.getElementById('dealerPaste').value = '';
-}
 
 function generate() {
   if (!eventCodes.length) { alert('Add at least one event code.'); return; }
@@ -623,23 +653,15 @@ function generate() {
   const prefix = getVal('campaignPrefix') || 'CANS';
 
   const base = {
-    modelYear:     getVal('modelYear'),
-    marketingModel: getVal('marketingModel'),
-    marketingMake:  getVal('marketingMake'),
+    modelYear:        getVal('modelYear'),
+    marketingModel:   getVal('marketingModel'),
+    marketingMake:    getVal('marketingMake'),
     loyaltyMemberFlag: getVal('loyaltyFlag'),
-    firstName:    getVal('firstName'),
-    Email:        getVal('email'),
-    Touch:        getVal('touch'),
-    VIN:          getVal('vin'),
-    dealerName:   getVal('dealerName'),
-    dealerBAC:    getVal('dealerBAC'),
-    dealerAddress: getVal('dealerAddress'),
-    dealerCity:   getVal('dealerCity'),
-    dealerState:  getVal('dealerState'),
-    dealerZip:    getVal('dealerZip'),
-    dealerPhone:  getVal('dealerPhone'),
-    dealerURL:    (u => u && !u.match(/^https?:\/\//) ? 'https://' + u : u)(getVal('dealerURL')),
+    Email:            getVal('email'),
+    Touch:            getVal('touch'),
+    VIN:              getVal('vin'),
   };
+  // firstName and dealer are randomized per record from the pools
 
   const msgIdStart = parseInt(getVal('messageId')) || 1;
 
@@ -658,12 +680,14 @@ function generate() {
     for (const ec of eventCodes) {
       const loyaltyVariants = ec === '38' ? ['N', 'Y'] : [base.loyaltyMemberFlag];
       for (const loyaltyFlag of loyaltyVariants) {
-        const combo    = rand(groupCombos);
-        const intColor = rand(interiorColors);
+        const combo     = rand(groupCombos);
+        const intColor  = rand(interiorColors);
+        const dealer    = randDealer(base.marketingMake);
+        const firstName = randFirstName();
 
-        // VERSION_NAME: CANS | brand | eventCode | modelYear | modelName
+        // VERSION_NAME: prefix | brand | eventCode | modelYear | modelName
         const versionName = `${prefix} | ${base.marketingMake} | ${ec} | ${base.modelYear} | ${modelName}`;
-        // subjectLine: versionName + trim + extColor + interior
+        // subjectLine: versionName_trim_extColor_interior
         const subjectLine = `${versionName}_${combo.trim}_${combo.ext}_${intColor}`;
 
         records.push({
@@ -676,30 +700,30 @@ function generate() {
             }
           },
           targetData: {
-            SCENARIO_ID:             String(msgIdx + 1),
-            VERSION_NAME:            versionName,
-            Touch:                   base.Touch,
-            orderNbr:                randOrderNbr(),
-            merchandisingModelCode:  combo.model,
-            dealerAddress:           base.dealerAddress,
-            dealerBAC:               base.dealerBAC,
-            dealerCity:              base.dealerCity,
-            dealerName:              base.dealerName,
-            dealerPhone:             base.dealerPhone,
-            dealerState:             base.dealerState,
-            dealerURL:               base.dealerURL,
-            dealerZip:               base.dealerZip,
-            exteriorColor:           combo.ext,
-            firstName:               base.firstName,
-            interior:                intColor,
-            modelYear:               base.modelYear,
-            trim:                    combo.trim,
-            marketingMake:           base.marketingMake,
-            marketingModel:          modelName,
-            VIN:                     base.VIN,
-            eventCode:               ec,
-            Email:                   base.Email,
-            loyaltyMemberFlag:       loyaltyFlag,
+            SCENARIO_ID:            String(msgIdx + 1),
+            VERSION_NAME:           versionName,
+            Touch:                  base.Touch,
+            orderNbr:               randOrderNbr(),
+            merchandisingModelCode: combo.model,
+            dealerAddress:          dealer.address,
+            dealerBAC:              dealer.BAC,
+            dealerCity:             dealer.city,
+            dealerName:             dealer.name,
+            dealerPhone:            dealer.phone,
+            dealerState:            dealer.state,
+            dealerURL:              dealer.url,
+            dealerZip:              dealer.zip,
+            exteriorColor:          combo.ext,
+            firstName:              firstName,
+            interior:               intColor,
+            modelYear:              base.modelYear,
+            trim:                   combo.trim,
+            marketingMake:          base.marketingMake,
+            marketingModel:         modelName,
+            VIN:                    base.VIN,
+            eventCode:              ec,
+            Email:                  base.Email,
+            loyaltyMemberFlag:      loyaltyFlag,
           }
         });
         msgIdx++;
