@@ -873,10 +873,11 @@ function buildAvailData() {
 // Store TSV data per section so copy buttons can access it without re-computing
 const _tsvStore = {};
 
-function makeSection(id, label, labelColor, rows, noDataMsg) {
+function makeSection(id, label, labelColor, rows, noDataMsg, contextCols = []) {
   // rows: [{code, name}]
+  // contextCols: extra values prepended to each row in the TSV (e.g. brand, year, mmc)
   const count = rows.length;
-  const tsv = rows.map(r => r.name ? `${r.code}\t${r.name}` : r.code).join('\n');
+  const tsv = rows.map(r => [...contextCols, r.code, r.name].join('\t')).join('\n');
   _tsvStore[id] = tsv;
 
   const tableRows = rows.map(r =>
@@ -919,8 +920,10 @@ function openAvailModal() {
   const { byMC, trimPairsMap, extPairsMap, intPairs, mmcModelMap } = buildAvailData();
   _availData = buildAvailJSON(byMC, trimPairsMap, extPairsMap, intPairs);
 
-  const mcs = Object.keys(byMC).sort();
-  const body = document.getElementById('availModalBody');
+  const mcs   = Object.keys(byMC).sort();
+  const brand = document.getElementById('brand').value.trim();
+  const year  = document.getElementById('year').value.trim();
+  const body  = document.getElementById('availModalBody');
 
   body.innerHTML = mcs.map(mc => {
     const { trims, extColors } = byMC[mc];
@@ -932,6 +935,10 @@ function openAvailModal() {
 
     const sid = mc.replace(/[^a-z0-9]/gi, '_');
 
+    // TSV context columns per section:
+    // Trims:    brand | model_yr | mmc | trim_code | trim_text
+    // Exterior: brand | model_yr | model_name | ext_code | ext_text
+    // Interior: brand | model_yr | model_name | int_code | int_text
     return `
       <div class="avail-card">
         <div class="avail-card-head">
@@ -939,9 +946,9 @@ function openAvailModal() {
           ${modelName ? `<span class="avail-mmc-name">${modelName}</span>` : ''}
         </div>
         <div class="avail-card-body">
-          ${makeSection(`${sid}-trim`, 'Trims',          '#f87171', trimRows, '—')}
-          ${makeSection(`${sid}-ext`,  'Exterior Colors', '#ff9f43', extRows,  '—')}
-          ${makeSection(`${sid}-int`,  'Interior Colors', '#c084fc', intRows,  'Load interior colors via Campaign Setup')}
+          ${makeSection(`${sid}-trim`, 'Trims',           '#f87171', trimRows, '—',                                    [brand, year, mc])}
+          ${makeSection(`${sid}-ext`,  'Exterior Colors', '#ff9f43', extRows,  '—',                                    [brand, year, modelName])}
+          ${makeSection(`${sid}-int`,  'Interior Colors', '#c084fc', intRows,  'Load interior colors via Campaign Setup', [brand, year, modelName])}
         </div>
       </div>`;
   }).join('');
