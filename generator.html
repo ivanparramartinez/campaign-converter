@@ -690,17 +690,18 @@ function generate() {
         // subjectLine: versionName_trim_extColor_interior
         const subjectLine = `${versionName}_${combo.trim}_${combo.ext}_${intColor}`;
 
+        const messageId = String(msgIdStart + msgIdx);
         records.push({
           subjectLine,
           message: {
-            id: String(msgIdStart + msgIdx),
+            id: messageId,
             delivery: {
               mapping: { name: "targetData" },
               label: randLabel()
             }
           },
           targetData: {
-            SCENARIO_ID:            String(msgIdx + 1),
+            versionId:              messageId,
             VERSION_NAME:           versionName,
             Touch:                  base.Touch,
             orderNbr:               randOrderNbr(),
