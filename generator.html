@@ -278,18 +278,12 @@
       <div class="section-title">Base Data</div>
       <div class="grid2">
         <div>
-          <label>Order Nbr</label>
-          <input type="text" id="orderNbr" value="CQ0005005">
-        </div>
-      </div>
-      <div class="grid2">
-        <div>
           <label>Model Year</label>
-          <input type="text" id="modelYear" value="2027">
+          <input type="text" id="modelYear" value="2026">
         </div>
         <div>
           <label>Marketing Model</label>
-          <input type="text" id="marketingModel" value="Bolt">
+          <input type="text" id="marketingModel" value="Blazer EV">
         </div>
       </div>
       <div class="grid2">
@@ -304,24 +298,22 @@
         </div>
         <div>
           <label>Message ID (start)</label>
-          <input type="text" id="messageId" value="104">
+          <input type="text" id="messageId" value="001">
         </div>
       </div>
       <div class="grid2">
-        <div>
-          <label>Delivery Label</label>
-          <input type="text" id="deliveryLabel" value="tmhgbtir">
-        </div>
         <div>
           <label>Loyalty Member Flag</label>
           <input type="text" id="loyaltyFlag" value="N">
         </div>
-      </div>
-      <div class="grid2">
         <div>
           <label>Campaign Prefix</label>
           <input type="text" id="campaignPrefix" value="CANS" placeholder="CANS" style="text-transform:uppercase">
         </div>
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);padding:6px 0">
+        ⟳ <b style="color:var(--muted2)">Order Nbr</b> and <b style="color:var(--muted2)">delivery label</b> are generated randomly per record
+        &nbsp;(format: <span style="color:var(--accent2)">XXXXXX</span> / <span style="color:var(--accent2)">xxxxxxxx</span>)
       </div>
     </div>
 
@@ -584,6 +576,24 @@ document.getElementById('combosTextarea').addEventListener('input', updateCombos
 function getVal(id) { return document.getElementById(id).value.trim(); }
 function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
+// orderNbr: 5 uppercase letters + 1 digit  →  e.g. FKDNX8
+function randOrderNbr() {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const digits  = '0123456789';
+  let s = '';
+  for (let i = 0; i < 5; i++) s += letters[Math.floor(Math.random() * letters.length)];
+  s += digits[Math.floor(Math.random() * digits.length)];
+  return s;
+}
+
+// delivery label: 8 lowercase letters  →  e.g. vrmesaas
+function randLabel() {
+  const letters = 'abcdefghijklmnopqrstuvwxyz';
+  let s = '';
+  for (let i = 0; i < 8; i++) s += letters[Math.floor(Math.random() * letters.length)];
+  return s;
+}
+
 // pairs loaded directly via textarea
 
 
@@ -613,7 +623,6 @@ function generate() {
   const prefix = getVal('campaignPrefix') || 'CANS';
 
   const base = {
-    orderNbr:      getVal('orderNbr'),
     modelYear:     getVal('modelYear'),
     marketingModel: getVal('marketingModel'),
     marketingMake:  getVal('marketingMake'),
@@ -633,7 +642,6 @@ function generate() {
   };
 
   const msgIdStart = parseInt(getVal('messageId')) || 1;
-  const delivLabel = getVal('deliveryLabel');
 
   // Group combos by effective model name, preserving insertion order
   const modelGroups = new Map();
@@ -664,14 +672,14 @@ function generate() {
             id: String(msgIdStart + msgIdx),
             delivery: {
               mapping: { name: "targetData" },
-              label: delivLabel
+              label: randLabel()
             }
           },
           targetData: {
             SCENARIO_ID:             String(msgIdx + 1),
             VERSION_NAME:            versionName,
             Touch:                   base.Touch,
-            orderNbr:                base.orderNbr,
+            orderNbr:                randOrderNbr(),
             merchandisingModelCode:  combo.model,
             dealerAddress:           base.dealerAddress,
             dealerBAC:               base.dealerBAC,
