@@ -228,11 +228,11 @@ function applyGlobals() {
   const g = getGlobals();
 
   if (g.brand) {
+    // Set inBrand if present (most tools use this id)
     const sel = document.getElementById('inBrand');
-    if (sel) {
-      sel.value = g.brand;
-      if (_callbacks.onBrand) _callbacks.onBrand(g.brand);
-    }
+    if (sel) sel.value = g.brand;
+    // Always fire the callback — tools with different element ids (e.g. marketingMake) handle it there
+    if (_callbacks.onBrand) _callbacks.onBrand(g.brand);
   }
 
   if (g.years && g.years.length && _callbacks.onYears) {
