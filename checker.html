@@ -196,16 +196,42 @@
   }
   .avail-mmc { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); }
   .avail-mmc-name { font-family: var(--mono); font-size: 11px; color: var(--muted2); }
-  .avail-card-body { padding: 10px 14px; display: flex; flex-direction: column; gap: 9px; }
-  .avail-row { display: grid; grid-template-columns: 72px 1fr; gap: 10px; align-items: flex-start; }
-  .avail-lbl { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding-top: 5px; }
-  .avail-chips { display: flex; flex-wrap: wrap; gap: 5px; }
-  .achip { font-family: var(--mono); font-size: 11px; border-radius: 3px; padding: 3px 9px; border: 1px solid; display: inline-flex; align-items: center; gap: 5px; }
-  .achip-trim { background: rgba(248,113,113,0.08); border-color: rgba(248,113,113,0.28); color: #f87171; }
-  .achip-ext  { background: rgba(255,159,67,0.08);  border-color: rgba(255,159,67,0.28);  color: #ff9f43; }
-  .achip-int  { background: rgba(192,132,252,0.08); border-color: rgba(192,132,252,0.28); color: #c084fc; }
-  .achip-sub  { font-size: 10px; color: var(--muted); }
-  .avail-none { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .avail-card-body { padding: 0; }
+
+  /* Per-section blocks inside each card */
+  .avail-section { border-bottom: 1px solid var(--border); }
+  .avail-section:last-child { border-bottom: none; }
+  .avail-section-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 14px; background: transparent;
+  }
+  .avail-section-label {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .avail-section-count { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+  .avail-copy-tsv {
+    margin-left: auto; font-family: var(--mono); font-size: 10px;
+    background: transparent; border: 1px solid var(--border2); color: var(--muted);
+    border-radius: 3px; padding: 2px 8px; cursor: pointer; transition: all 0.1s; letter-spacing: 0.06em;
+  }
+  .avail-copy-tsv:hover { color: var(--text); border-color: var(--muted2); }
+
+  /* Two-column code/name table */
+  .avail-table { width: 100%; border-collapse: collapse; }
+  .avail-table tr:hover td { background: var(--surface2); }
+  .avail-table td {
+    font-family: var(--mono); font-size: 12px;
+    padding: 4px 14px; border-top: 1px solid var(--border); vertical-align: middle;
+    user-select: text;
+  }
+  .avail-table td:first-child { font-weight: 600; white-space: nowrap; width: 1%; }
+  .avail-table td:last-child  { color: var(--muted2); }
+  .avail-table tr:first-child td { border-top: none; }
+  .avail-col-trim td:first-child { color: #f87171; }
+  .avail-col-ext  td:first-child { color: #ff9f43; }
+  .avail-col-int  td:first-child { color: #c084fc; }
+  .avail-none { font-family: var(--mono); font-size: 11px; color: var(--muted); padding: 6px 14px; display: block; }
 
   .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 1000; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
   .lightbox.open { display: flex; }
@@ -844,6 +870,51 @@ function buildAvailData() {
   return { byMC, trimPairsMap, extPairsMap, intPairs, mmcModelMap };
 }
 
+// Store TSV data per section so copy buttons can access it without re-computing
+const _tsvStore = {};
+
+function makeSection(id, label, labelColor, rows, noDataMsg) {
+  // rows: [{code, name}]
+  const count = rows.length;
+  const tsv = rows.map(r => r.name ? `${r.code}\t${r.name}` : r.code).join('\n');
+  _tsvStore[id] = tsv;
+
+  const tableRows = rows.map(r =>
+    `<tr>
+      <td>${r.code}</td>
+      <td>${r.name || ''}</td>
+    </tr>`
+  ).join('');
+
+  const countStr = count ? `<span class="avail-section-count">${count}</span>` : '';
+  const copyBtn = count
+    ? `<button class="avail-copy-tsv" onclick="copyTSV('${id}',this)">⎘ Copy</button>`
+    : '';
+
+  return `
+    <div class="avail-section">
+      <div class="avail-section-head">
+        <span class="avail-section-label" style="color:${labelColor}">${label}</span>
+        ${countStr}
+        ${copyBtn}
+      </div>
+      ${count
+        ? `<table class="avail-table avail-col-${id.split('-')[1]}">${tableRows}</table>`
+        : `<span class="avail-none">${noDataMsg}</span>`
+      }
+    </div>`;
+}
+
+function copyTSV(id, btn) {
+  const tsv = _tsvStore[id];
+  if (!tsv) return;
+  navigator.clipboard.writeText(tsv).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied';
+    setTimeout(() => btn.textContent = orig, 2000);
+  });
+}
+
 function openAvailModal() {
   const { byMC, trimPairsMap, extPairsMap, intPairs, mmcModelMap } = buildAvailData();
   _availData = buildAvailJSON(byMC, trimPairsMap, extPairsMap, intPairs);
@@ -851,25 +922,15 @@ function openAvailModal() {
   const mcs = Object.keys(byMC).sort();
   const body = document.getElementById('availModalBody');
 
-  const intSource = intPairs.length
-    ? `<span style="color:var(--muted);font-family:var(--mono);font-size:10px;margin-left:6px">(${intPairs.length} from globals)</span>`
-    : `<span style="color:var(--muted);font-family:var(--mono);font-size:10px;margin-left:6px">— load via Campaign Setup</span>`;
-
   body.innerHTML = mcs.map(mc => {
     const { trims, extColors } = byMC[mc];
     const modelName = mmcModelMap[mc] || '';
 
-    const trimChips = [...trims].sort().map(t =>
-      `<span class="achip achip-trim">${t}${trimPairsMap[t] ? `<span class="achip-sub">${trimPairsMap[t]}</span>` : ''}</span>`
-    ).join('');
+    const trimRows = [...trims].sort().map(t => ({ code: t, name: trimPairsMap[t] || '' }));
+    const extRows  = [...extColors].sort().map(c => ({ code: c, name: extPairsMap[c]  || '' }));
+    const intRows  = intPairs.map(p => ({ code: p.code, name: p.text || '' }));
 
-    const extChips = [...extColors].sort().map(c =>
-      `<span class="achip achip-ext">${c}${extPairsMap[c] ? `<span class="achip-sub">${extPairsMap[c]}</span>` : ''}</span>`
-    ).join('');
-
-    const intChips = intPairs.length
-      ? intPairs.map(p => `<span class="achip achip-int">${p.code}<span class="achip-sub">${p.text}</span></span>`).join('')
-      : `<span class="avail-none">—</span>`;
+    const sid = mc.replace(/[^a-z0-9]/gi, '_');
 
     return `
       <div class="avail-card">
@@ -878,18 +939,9 @@ function openAvailModal() {
           ${modelName ? `<span class="avail-mmc-name">${modelName}</span>` : ''}
         </div>
         <div class="avail-card-body">
-          <div class="avail-row">
-            <div class="avail-lbl">Trims<br><span style="color:var(--muted);font-weight:400">${trims.size}</span></div>
-            <div class="avail-chips">${trimChips}</div>
-          </div>
-          <div class="avail-row">
-            <div class="avail-lbl">Ext<br><span style="color:var(--muted);font-weight:400">${extColors.size}</span></div>
-            <div class="avail-chips">${extChips}</div>
-          </div>
-          <div class="avail-row">
-            <div class="avail-lbl">Int${intSource}</div>
-            <div class="avail-chips">${intChips}</div>
-          </div>
+          ${makeSection(`${sid}-trim`, 'Trims',          '#f87171', trimRows, '—')}
+          ${makeSection(`${sid}-ext`,  'Exterior Colors', '#ff9f43', extRows,  '—')}
+          ${makeSection(`${sid}-int`,  'Interior Colors', '#c084fc', intRows,  'Load interior colors via Campaign Setup')}
         </div>
       </div>`;
   }).join('');
