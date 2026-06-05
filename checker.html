@@ -310,7 +310,12 @@
         </div>
         <div style="margin-bottom:12px">
           <label>Brand</label>
-          <input type="text" id="brand" value="cadillac" oninput="updatePreview()">
+          <select id="brand" onchange="updatePreview();saveGlobals({brand:this.value})" style="background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:13px;padding:6px 11px;border-radius:4px;outline:none;width:100%">
+            <option value="Chevrolet">Chevrolet</option>
+            <option value="Cadillac">Cadillac</option>
+            <option value="GMC">GMC</option>
+            <option value="Buick">Buick</option>
+          </select>
         </div>
         <div style="margin-bottom:12px">
           <label>Year</label>
@@ -507,7 +512,7 @@ function renderTags(key, listId) {
 function buildUrl(mc, tr, ec) {
   const base  = document.getElementById('baseUrl').value.trim().replace(/\/$/, '');
   const body  = document.getElementById('bodyType').value.trim();
-  const brand = document.getElementById('brand').value.trim();
+  const brand = document.getElementById('brand').value.trim().toLowerCase(); // URL needs lowercase
   const yr    = document.getElementById('year').value.trim();
   const angle = document.getElementById('angle').value.trim();
   const file  = document.getElementById('filename').value.trim();
@@ -520,7 +525,7 @@ function updatePreview() {
   const ec    = state.extColors[0]  || '{extColor}';
   const base  = document.getElementById('baseUrl').value.trim().replace(/\/$/, '');
   const body  = document.getElementById('bodyType').value.trim();
-  const brand = document.getElementById('brand').value.trim();
+  const brand = document.getElementById('brand').value.trim().toLowerCase();
   const yr    = document.getElementById('year').value.trim();
   const angle = document.getElementById('angle').value.trim();
   const file  = document.getElementById('filename').value.trim();
@@ -842,9 +847,10 @@ renderTags('modelCodes','modelCodeList');
 renderTags('trims','trimList');
 renderTags('extColors','extColorList');
 updatePreview();
-['baseUrl','bodyType','brand','year','angle','filename'].forEach(id=>{
+['baseUrl','bodyType','year','angle','filename'].forEach(id=>{
   document.getElementById(id).addEventListener('input', updatePreview);
 });
+// brand is now a <select> — uses onchange defined inline
 
 // ─── PER-MODEL AVAILABILITY MODAL ────────────────────────────────────────────
 
@@ -1009,6 +1015,15 @@ renderTags = function(key, listId) {
 };
 
 initGlobals({
+  onBrand: (brand) => {
+    const sel = document.getElementById('brand');
+    if (sel) {
+      // Match by case-insensitive value
+      const opt = [...sel.options].find(o => o.value.toLowerCase() === brand.toLowerCase());
+      if (opt) sel.value = opt.value;
+    }
+    updatePreview();
+  },
   onMMCs: (mmcs) => {
     state.modelCodes = [...mmcs];
     _chkRenderTags('modelCodes','modelCodeList');
