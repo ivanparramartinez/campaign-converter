@@ -378,34 +378,23 @@
       <div class="tag-list" id="extColorList"></div>
     </div>
 
-    <!-- INTERIOR COLORS (optional) -->
+    <!-- INTERIOR COLORS (availability modal only — not included in URL) -->
     <div>
-      <!-- Toggle row -->
-      <div class="int-toggle-row" id="intToggleRow" onclick="toggleInterior()">
-        <div class="int-toggle-switch" id="intToggleSwitch"></div>
-        <span class="int-toggle-label">Interior Colors</span>
-        <span class="int-toggle-hint" id="intToggleHint">off</span>
+      <div class="section-title" style="color:#c084fc">
+        <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#c084fc"></span>
+        Interior Colors
+        <span style="font-family:var(--mono);font-size:9px;color:var(--muted);font-weight:400;margin-left:4px;text-transform:none;letter-spacing:0">— for availability modal only</span>
       </div>
-
-      <!-- Collapsible content -->
-      <div class="int-section" id="intSection">
-        <div style="padding-top:10px">
-          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:7px;line-height:1.6">
-            When enabled, URL uses <span style="color:#c084fc">ext__int__angle</span> pattern:<br>
-            <span style="color:var(--muted2)">…/GBA__H7D__deg01/gmds10.png</span>
-          </div>
-          <div class="bulk-hint">Comma, space or Enter separated</div>
-          <div class="bulk-row">
-            <textarea id="newIntColor" placeholder="H7D, H2G, HVE" rows="2"></textarea>
-            <button class="btn btn-sm" onclick="bulkAdd('intColors','newIntColor','intColorList')">+ Add</button>
-          </div>
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px">
-            <span style="font-family:var(--mono);font-size:10px;color:#c084fc" id="intColorsCount">0 colors</span>
-            <button class="tag-clear" onclick="clearAll('intColors','intColorList')" style="border-color:rgba(192,132,252,0.3);color:#c084fc" onmouseover="this.style.borderColor='#c084fc'" onmouseout="this.style.borderColor='rgba(192,132,252,0.3)'">clear</button>
-          </div>
-          <div class="tag-list" id="intColorList"></div>
-        </div>
+      <div class="bulk-hint">Comma, space or Enter separated</div>
+      <div class="bulk-row">
+        <textarea id="newIntColor" placeholder="H7D, H2G, HVE" rows="2"></textarea>
+        <button class="btn btn-sm" onclick="bulkAdd('intColors','newIntColor','intColorList')">+ Add</button>
       </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px">
+        <span style="font-family:var(--mono);font-size:10px;color:#c084fc" id="intColorsCount">0 colors</span>
+        <button class="tag-clear" onclick="clearAll('intColors','intColorList')" style="border-color:rgba(192,132,252,0.3);color:#c084fc" onmouseover="this.style.borderColor='#c084fc'" onmouseout="this.style.borderColor='rgba(192,132,252,0.3)'">clear</button>
+      </div>
+      <div class="tag-list" id="intColorList"></div>
     </div>
 
     <!-- RUN -->
@@ -486,29 +475,11 @@
 const state = { modelCodes: [], trims: [], extColors: [], intColors: [] };
 let results = [], activeFilter = 'all', running = false, shouldStop = false;
 let summaryOpen = false;
-let useInterior = false; // toggle state
 
 const countLabels = { modelCodes: 'modelCodesCount', trims: 'trimsCount', extColors: 'extColorsCount', intColors: 'intColorsCount' };
 const countSuffix = { modelCodes: 'codes', trims: 'trims', extColors: 'colors', intColors: 'colors' };
 const listIds     = { modelCodes: 'modelCodeList', trims: 'trimList', extColors: 'extColorList', intColors: 'intColorList' };
 
-// ─── INTERIOR TOGGLE ─────────────────────────────────────────────────────────
-function toggleInterior() {
-  useInterior = !useInterior;
-  const row     = document.getElementById('intToggleRow');
-  const section = document.getElementById('intSection');
-  const hint    = document.getElementById('intToggleHint');
-  if (useInterior) {
-    row.classList.add('enabled');
-    section.classList.add('open');
-    hint.textContent = 'on';
-  } else {
-    row.classList.remove('enabled');
-    section.classList.remove('open');
-    hint.textContent = 'off';
-  }
-  updatePreview();
-}
 
 // ─── BULK ADD ────────────────────────────────────────────────────────────────
 function parseBulkInput(raw) {
@@ -558,47 +529,35 @@ function renderTags(key, listId) {
 });
 
 // ─── URL BUILDING ─────────────────────────────────────────────────────────────
-// Without interior: …/extColor_angle/filename
-// With interior:    …/extColor__intColor__angle/filename
-function buildUrl(mc, tr, ec, ic) {
+// Format: {base}/images/exterior/{body}/{brand}/{year}/{MMC}/{trim}/{ext}_{angle}/{file}
+// Interior colors are NOT part of the URL — they live in the availability modal only.
+function buildUrl(mc, tr, ec) {
   const base  = document.getElementById('baseUrl').value.trim().replace(/\/$/, '');
   const body  = document.getElementById('bodyType').value.trim();
   const brand = document.getElementById('brand').value.trim();
   const yr    = document.getElementById('year').value.trim();
   const angle = document.getElementById('angle').value.trim();
   const file  = document.getElementById('filename').value.trim();
-
-  const colorPart = (useInterior && ic)
-    ? `${ec}__${ic}__${angle}`
-    : `${ec}_${angle}`;
-
-  return `${base}/images/exterior/${body}/${brand}/${yr}/${mc}/${tr}/${colorPart}/${file}`;
+  return `${base}/images/exterior/${body}/${brand}/${yr}/${mc}/${tr}/${ec}_${angle}/${file}`;
 }
 
 function updatePreview() {
   const mc    = state.modelCodes[0] || '{modelCode}';
   const tr    = state.trims[0]      || '{trim}';
   const ec    = state.extColors[0]  || '{extColor}';
-  const ic    = state.intColors[0]  || '{intColor}';
   const base  = document.getElementById('baseUrl').value.trim().replace(/\/$/, '');
   const body  = document.getElementById('bodyType').value.trim();
   const brand = document.getElementById('brand').value.trim();
   const yr    = document.getElementById('year').value.trim();
   const angle = document.getElementById('angle').value.trim();
   const file  = document.getElementById('filename').value.trim();
-
-  const colorPart = useInterior
-    ? `<span class="seg-var">${ec}</span><span class="seg">__</span><span class="seg-int">${ic}</span><span class="seg">__${angle}</span>`
-    : `<span class="seg-var">${ec}</span><span class="seg">_${angle}</span>`;
-
   document.getElementById('urlPreview').innerHTML =
     `<span class="seg">${base}/images/exterior/${body}/</span>` +
     `<span class="seg-var">${brand}</span><span class="seg">/</span>` +
     `<span class="seg-var">${yr}</span><span class="seg">/</span>` +
     `<span class="seg-var">${mc}</span><span class="seg">/</span>` +
     `<span class="seg-var">${tr}</span><span class="seg">/</span>` +
-    colorPart +
-    `<span class="seg">/${file}</span>`;
+    `<span class="seg-var">${ec}</span><span class="seg">_${angle}/${file}</span>`;
 }
 
 // ─── CHECK LOGIC ─────────────────────────────────────────────────────────────
@@ -654,15 +613,11 @@ async function startCheck() {
   if (running) return;
   _sessionToken = Date.now(); // new token per run so results are always fresh
 
-  // Build combos — with or without interior
   const combos = [];
-  const intList = (useInterior && state.intColors.length) ? state.intColors : [null];
-
   for (const mc of state.modelCodes)
     for (const tr of state.trims)
       for (const ec of state.extColors)
-        for (const ic of intList)
-          combos.push({ mc, tr, ec, ic, url: buildUrl(mc, tr, ec, ic) });
+        combos.push({ mc, tr, ec, url: buildUrl(mc, tr, ec) });
 
   if (!combos.length) { alert('Add at least one value to each active list.'); return; }
 
@@ -734,22 +689,18 @@ function badgeHtml(r) {
   return `<span class="badge badge-error">— Error</span>`;
 }
 function thumbHtml(r) {
-  if (r.status==='ok')  return `<img class="thumb" src="${r.url}" alt="${r.ec}" onclick="openLightbox('${r.url}','${r.mc} / ${r.tr} / ${r.ec}${r.ic ? ' / ' + r.ic : ''}')" title="Click to enlarge">`;
+  if (r.status==='ok')  return `<img class="thumb" src="${r.url}" alt="${r.ec}" onclick="openLightbox('${r.url}','${r.mc} / ${r.tr} / ${r.ec}')" title="Click to enlarge">`;
   if (r.status==='bad') return `<img class="thumb pixel" src="${r.url}" alt="${r.ec}">`;
   return `<span style="color:var(--muted);font-family:var(--mono);font-size:11px">—</span>`;
 }
 
 function rowHtml(r, i) {
   const vis = activeFilter==='all' || r.status===activeFilter;
-  const intCell = useInterior
-    ? `<td><span style="font-family:var(--mono);font-size:13px;color:#c084fc">${r.ic || '—'}</span></td>`
-    : '';
   return `<tr id="row-${i}" style="${vis?'':'display:none'}">
     <td style="width:54px">${thumbHtml(r)}</td>
     <td><span style="font-family:var(--mono);font-size:13px">${r.mc}</span></td>
     <td><span style="font-family:var(--mono);font-size:13px">${r.tr}</span></td>
     <td><span style="font-family:var(--mono);font-size:13px">${r.ec}</span></td>
-    ${intCell}
     <td id="badge-${i}">${badgeHtml(r)}</td>
     <td class="url-cell"><a href="${r.url}" target="_blank">${r.url.replace(/^https?:\/\/[^/]+/,'')}</a></td>
   </tr>`;
@@ -761,9 +712,8 @@ function renderTable() {
     c.innerHTML=`<div class="empty-state">Configure the parameters<br>and press Verify</div>`;
     return;
   }
-  const intHeader = useInterior ? '<th>Interior</th>' : '';
   c.innerHTML = `<table class="results-table"><thead><tr>
-    <th></th><th>Model Code</th><th>Trim</th><th>Ext. Color</th>${intHeader}<th>Status</th><th>URL</th>
+    <th></th><th>Model Code</th><th>Trim</th><th>Ext. Color</th><th>Status</th><th>URL</th>
   </tr></thead><tbody>${results.map((r,i)=>rowHtml(r,i)).join('')}</tbody></table>`;
 }
 
@@ -798,9 +748,8 @@ function buildSummaryData() {
   const grouped = {};
   okResults.forEach(r => {
     if (!grouped[r.mc]) grouped[r.mc] = {};
-    if (!grouped[r.mc][r.tr]) grouped[r.mc][r.tr] = {};
-    if (!grouped[r.mc][r.tr][r.ec]) grouped[r.mc][r.tr][r.ec] = [];
-    if (r.ic && !grouped[r.mc][r.tr][r.ec].includes(r.ic)) grouped[r.mc][r.tr][r.ec].push(r.ic);
+    if (!grouped[r.mc][r.tr]) grouped[r.mc][r.tr] = [];
+    if (!grouped[r.mc][r.tr].includes(r.ec)) grouped[r.mc][r.tr].push(r.ec);
   });
   return grouped;
 }
@@ -829,21 +778,11 @@ function renderSummary() {
     html += `<div class="summary-group">`;
     html += `<div class="summary-group-title">Model Code: <b>${mc}</b></div>`;
     for (const tr of Object.keys(grouped[mc]).sort()) {
-      for (const ec of Object.keys(grouped[mc][tr]).sort()) {
-        const intColors = grouped[mc][tr][ec];
-        html += `<div style="margin-bottom:10px">`;
-        html += `<div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-bottom:5px">Trim <b style="color:var(--text)">${tr}</b> · Ext <b style="color:var(--text)">${ec}</b>`;
-        if (intColors.length) {
-          html += ` — <span style="color:#c084fc">${intColors.length} interior${intColors.length!==1?'s':''}</span>`;
-        }
-        html += `</div>`;
-        if (intColors.length) {
-          html += `<div class="combo-chips">${intColors.map(c=>`<span class="combo-chip" style="color:#c084fc;background:rgba(192,132,252,0.07);border-color:rgba(192,132,252,0.2)">${c}</span>`).join('')}</div>`;
-        } else {
-          html += `<div class="combo-chips"><span class="combo-chip">✓ valid</span></div>`;
-        }
-        html += `</div>`;
-      }
+      const colors = grouped[mc][tr].sort();
+      html += `<div style="margin-bottom:10px">`;
+      html += `<div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-bottom:5px">Trim <b style="color:var(--text)">${tr}</b> — ${colors.length} color${colors.length!==1?'s':''}</div>`;
+      html += `<div class="combo-chips">${colors.map(c=>`<span class="combo-chip">${c}</span>`).join('')}</div>`;
+      html += `</div>`;
     }
     html += `</div>`;
   }
@@ -857,15 +796,7 @@ function copySummaryText() {
     lines.push(`\nModel Code: ${mc}`);
     for (const tr of Object.keys(grouped[mc]).sort()) {
       lines.push(`  Trim: ${tr}`);
-      for (const ec of Object.keys(grouped[mc][tr]).sort()) {
-        const intColors = grouped[mc][tr][ec];
-        if (intColors.length) {
-          lines.push(`    Ext: ${ec}`);
-          lines.push(`    Interior: ${intColors.sort().join(', ')}`);
-        } else {
-          lines.push(`    Ext: ${ec}`);
-        }
-      }
+      lines.push(`  Colors: ${grouped[mc][tr].sort().join(', ')}`);
     }
   }
   navigator.clipboard.writeText(lines.join('\n')).then(() => {
@@ -879,10 +810,7 @@ function downloadSummaryJSON() {
     modelCode: mc,
     trims: Object.keys(grouped[mc]).sort().map(tr => ({
       trim: tr,
-      extColors: Object.keys(grouped[mc][tr]).sort().map(ec => {
-        const intColors = grouped[mc][tr][ec].sort();
-        return intColors.length ? { extColor: ec, intColors } : { extColor: ec };
-      })
+      extColors: grouped[mc][tr].sort()
     }))
   }));
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
@@ -914,7 +842,7 @@ function exportPairs() {
   if (!results.length) return;
   const ok = results.filter(r => r.status === 'ok');
   if (!ok.length) return;
-  const lines = ok.map(r => [r.mc, r.tr, r.ec, r.ic].filter(Boolean).join(' ')).join('\n');
+  const lines = ok.map(r => `${r.mc} ${r.tr} ${r.ec}`).join('\n');
   navigator.clipboard.writeText(lines).then(() => {
     const btn = document.getElementById('exportPairsBtn');
     const orig = btn.textContent;
@@ -925,22 +853,13 @@ function exportPairs() {
 
 function exportCSV() {
   if (!results.length) return;
-  const hasInt = results.some(r => r.ic);
-  const header = `modelCode,trim,extColor${hasInt?',intColor':''},status,width,height,url`;
-  const rows = results.map(r => {
-    const intCol = hasInt ? `,${r.ic||''}` : '';
-    return `${r.mc},${r.tr},${r.ec}${intCol},${r.status},${r.w},${r.h},${r.url}`;
-  });
-  const blob = new Blob([header+'\n'+rows.join('\n')],{type:'text/csv'});
+  const rows = results.map(r => `${r.mc},${r.tr},${r.ec},${r.status},${r.w},${r.h},${r.url}`);
+  const blob = new Blob(['modelCode,trim,extColor,status,width,height,url\n'+rows.join('\n')],{type:'text/csv'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='image-check-results.csv'; a.click();
 }
 function exportJSON() {
   if (!results.length) return;
-  const data = results.map(({mc,tr,ec,ic,status,w,h,url}) => {
-    const obj = {modelCode:mc,trim:tr,extColor:ec};
-    if (ic) obj.intColor = ic;
-    return {...obj, status, width:w, height:h, url};
-  });
+  const data = results.map(({mc,tr,ec,status,w,h,url}) => ({modelCode:mc,trim:tr,extColor:ec,status,width:w,height:h,url}));
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='image-check-results.json'; a.click();
 }
@@ -1103,11 +1022,6 @@ initGlobals({
     const codes = pairs.map(p => p.code).filter(Boolean);
     codes.forEach(c => { if (!state.intColors.includes(c)) state.intColors.push(c); });
     _chkRenderTags('intColors','intColorList');
-    // Expand the section so the user can see the loaded codes,
-    // but leave the toggle OFF — they decide when to include interior in URLs
-    if (codes.length) {
-      document.getElementById('intSection').classList.add('open');
-    }
   },
 });
 </script>
