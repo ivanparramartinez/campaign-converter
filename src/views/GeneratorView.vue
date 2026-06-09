@@ -265,8 +265,8 @@ function generate() {
         const intColor  = rand(interiorColors.value)
         const dealer    = randDealer(f.marketingMake)
         const firstName = randFirstName()
-        const vName = `${f.campaignPrefix} | ${f.marketingMake} | ${ec} | ${f.modelYear} | ${modelName}`
         const msgId = String(f.messageIdStart + msgIdx)
+        const vName = `${msgId}_${f.campaignPrefix} | ${f.marketingMake} | ${ec} | ${f.modelYear} | ${modelName}`
         records.push({
           subjectLine: `${vName}_${combo.trim}_${combo.ext}_${intColor}`,
           message: { id: msgId, delivery: { mapping: { name:'targetData' }, label: randLabel() } },
