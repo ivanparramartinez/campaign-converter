@@ -5,16 +5,48 @@
     <div class="tool-header">
       <div class="logo">Campaign <span>//</span> Data Setup</div>
       <div class="header-chips">
-        <HeaderChip v-if="g.mmcs.length"         label="MMC"  :count="g.mmcs.length"         color="#34d399" />
-        <HeaderChip v-if="g.trimPairs.length"     label="TRIM" :count="g.trimPairs.length"     color="#f87171" />
-        <HeaderChip v-if="g.exteriorPairs.length" label="EXT"  :count="g.exteriorPairs.length" color="#ff9f43" />
-        <HeaderChip v-if="g.interiorPairs.length" label="INT"  :count="g.interiorPairs.length" color="#c084fc" />
+        <span v-if="g.brand"               class="hchip" style="background:rgba(0,200,255,0.08);border:1px solid rgba(0,200,255,0.28);color:var(--accent2)">{{ g.brand }}</span>
+        <span v-if="g.years.length"         class="hchip" style="background:rgba(0,200,255,0.06);border:1px solid rgba(0,200,255,0.2);color:var(--accent2)">{{ g.years.join(' · ') }}</span>
+        <span v-if="g.mmcs.length"          class="hchip" style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.28);color:#34d399">MMC <b>{{ g.mmcs.length }}</b></span>
+        <span v-if="g.trimPairs.length"     class="hchip" style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.28);color:#f87171">TRIM <b>{{ g.trimPairs.length }}</b></span>
+        <span v-if="g.exteriorPairs.length" class="hchip" style="background:rgba(255,159,67,0.08);border:1px solid rgba(255,159,67,0.28);color:#ff9f43">EXT <b>{{ g.exteriorPairs.length }}</b></span>
+        <span v-if="g.interiorPairs.length" class="hchip" style="background:rgba(192,132,252,0.08);border:1px solid rgba(192,132,252,0.28);color:#c084fc">INT <b>{{ g.interiorPairs.length }}</b></span>
       </div>
     </div>
 
     <div class="layout">
       <!-- LEFT: INPUT -->
       <div class="left-col">
+
+        <!-- BRAND + YEARS -->
+        <div class="section">
+          <div class="section-title">
+            <span class="dot" style="background:var(--accent2)"></span>
+            Brand &amp; Model Years
+          </div>
+          <div class="brand-years-row">
+            <div class="brand-group">
+              <label>Brand</label>
+              <select v-model="brand">
+                <option value="">— select —</option>
+                <option>GMC</option>
+                <option>Chevrolet</option>
+                <option>Buick</option>
+                <option>Cadillac</option>
+              </select>
+            </div>
+            <div class="years-group">
+              <label>Model Years <span class="cnt-inline">{{ years.length }}</span></label>
+              <div class="input-row">
+                <input v-model="yearInput" placeholder="2025" @keydown.enter="addYear" />
+                <button class="btn btn-sm" @click="addYear">Add</button>
+              </div>
+              <div class="tag-list" style="margin-top:6px">
+                <span class="tag" v-for="(y,i) in years" :key="y">{{ y }}<span class="del" @click="years.splice(i,1)">×</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- MMC -->
         <div class="section">
@@ -25,7 +57,7 @@
             <span class="cnt" v-else>—</span>
           </div>
           <div class="hint">One per line: <code>TC10543 Canyon</code> | <code>TK10906 Sierra 1500</code></div>
-          <textarea v-model="rawMmc" rows="5" placeholder="TC10543 Canyon&#10;TK10906 Sierra 1500" @input="updatePreview('mmc')" />
+          <textarea v-model="rawMmc" rows="5" placeholder="TC10543 Canyon&#10;TK10906 Sierra 1500" />
         </div>
 
         <!-- TRIM -->
@@ -81,10 +113,48 @@
 
       <!-- RIGHT: PREVIEW -->
       <div class="right-col">
-        <PreviewBox label="MMC codes & model names" color="#34d399" :items="mmcPairs.map(p => `${p.mmc} → ${p.name}`)" />
-        <PreviewBox label="Trim pairs" color="#f87171" :items="trimPairsLocal.map(p => `${p.trim} → ${p.text}${p.filterMode !== 'all' ? ` [${p.filterMode}: ${p.filterMMCs.join(',')}]` : ''}`)" />
-        <PreviewBox label="Exterior color pairs" color="#ff9f43" :items="extPairs.map(p => `${p.code} → ${p.name}`)" />
-        <PreviewBox label="Interior color pairs" color="#c084fc" :items="intPairs.map(p => `${p.code} → ${p.text}`)" />
+        <!-- MMC preview -->
+        <div class="prev-section">
+          <div class="prev-title"><span class="dot" style="background:#34d399"></span>MMC codes &amp; model names</div>
+          <div class="prev-box">
+            <div v-if="!mmcPairs.length" class="prev-empty">— paste data above —</div>
+            <div v-else class="tag-row">
+              <span v-for="p in mmcPairs" :key="p.mmc" class="ptag ptag-mmc">{{ p.mmc }} → {{ p.name }}</span>
+            </div>
+          </div>
+        </div>
+        <!-- Trim preview -->
+        <div class="prev-section">
+          <div class="prev-title"><span class="dot" style="background:#f87171"></span>Trim pairs</div>
+          <div class="prev-box">
+            <div v-if="!trimPairsLocal.length" class="prev-empty">— paste data above —</div>
+            <div v-else class="tag-row">
+              <span v-for="p in trimPairsLocal" :key="p.trim+p.text" class="ptag ptag-trim">
+                {{ p.trim }} → {{ p.text }}<template v-if="p.filterMode !== 'all'"> [{{ p.filterMode }}: {{ p.filterMMCs.join(',') }}]</template>
+              </span>
+            </div>
+          </div>
+        </div>
+        <!-- Exterior preview -->
+        <div class="prev-section">
+          <div class="prev-title"><span class="dot" style="background:#ff9f43"></span>Exterior color pairs</div>
+          <div class="prev-box">
+            <div v-if="!extPairs.length" class="prev-empty">— paste data above —</div>
+            <div v-else class="tag-row">
+              <span v-for="p in extPairs" :key="p.code" class="ptag ptag-ext">{{ p.code }} → {{ p.name }}</span>
+            </div>
+          </div>
+        </div>
+        <!-- Interior preview -->
+        <div class="prev-section">
+          <div class="prev-title"><span class="dot" style="background:#c084fc"></span>Interior color pairs</div>
+          <div class="prev-box">
+            <div v-if="!intPairs.length" class="prev-empty">— paste data above —</div>
+            <div v-else class="tag-row">
+              <span v-for="p in intPairs" :key="p.code" class="ptag ptag-int">{{ p.code }} → {{ p.text }}</span>
+            </div>
+          </div>
+        </div>
 
         <div class="tool-links-section">
           <div class="tl-label">Go to tool →</div>
@@ -155,6 +225,17 @@ import AppHeader from '../components/AppHeader.vue'
 import { useGlobalsStore } from '../stores/globals.js'
 
 const g = useGlobalsStore()
+
+// Brand + years
+const brand     = ref(g.brand || '')
+const years     = ref(g.years.length ? [...g.years] : [])
+const yearInput = ref('')
+
+function addYear() {
+  const vals = yearInput.value.split(/[,\s]+/).map(s => s.trim()).filter(Boolean)
+  vals.forEach(v => { if (!years.value.includes(v)) years.value.push(v) })
+  yearInput.value = ''
+}
 
 // Raw textarea state
 const rawMmc  = ref('')
@@ -229,24 +310,37 @@ const intPairs = computed(() => {
 // ── Actions ───────────────────────────────────────────────────────────────────
 
 function loadAll() {
+  // Brand & years
+  if (brand.value) g.setBrand(brand.value)
+  g.years = years.value.length ? [...years.value] : g.years
+
+  // MMC + nameplates derived from model names
   const mmcMap = {}
   mmcPairs.value.forEach(p => { mmcMap[p.mmc] = p.name })
   g.setMMCs(mmcPairs.value.map(p => p.mmc), mmcMap)
+
+  // Nameplates = unique model names from MMC map
+  const derivedNameplates = [...new Set(Object.values(mmcMap))]
+  if (derivedNameplates.length) g.nameplates = derivedNameplates
+
   g.setTrimPairs(trimPairsLocal.value)
   g.setExteriorPairs(extPairs.value)
   g.setInteriorPairs(intPairs.value)
 
   const parts = []
-  if (mmcPairs.value.length)     parts.push(`${mmcPairs.value.length} MMCs`)
-  if (trimPairsLocal.value.length) parts.push(`${trimPairsLocal.value.length} trims`)
-  if (extPairs.value.length)     parts.push(`${extPairs.value.length} ext colors`)
-  if (intPairs.value.length)     parts.push(`${intPairs.value.length} int colors`)
+  if (brand.value)                  parts.push(brand.value)
+  if (years.value.length)           parts.push(`${years.value.length} years`)
+  if (mmcPairs.value.length)        parts.push(`${mmcPairs.value.length} MMCs`)
+  if (trimPairsLocal.value.length)  parts.push(`${trimPairsLocal.value.length} trims`)
+  if (extPairs.value.length)        parts.push(`${extPairs.value.length} ext`)
+  if (intPairs.value.length)        parts.push(`${intPairs.value.length} int`)
 
   if (!parts.length) { showStatus('Paste at least one section of data first.', 'warn'); return }
   showStatus(`✓ ${parts.join(' · ')} loaded into all tools`, 'ok')
 }
 
 function clearAll() {
+  brand.value = ''; years.value = []; yearInput.value = ''
   rawMmc.value = rawTrim.value = rawExt.value = rawInt.value = ''
   g.clearAll()
   showStatus('All data cleared.', 'warn')
@@ -262,6 +356,8 @@ function showStatus(msg, type) {
 // ── Restore textareas from store on mount ─────────────────────────────────────
 
 onMounted(() => {
+  if (g.brand) brand.value = g.brand
+  if (g.years.length) years.value = [...g.years]
   if (Object.keys(g.mmcModelMap).length)
     rawMmc.value = Object.entries(g.mmcModelMap).map(([mmc, name]) => `${mmc} ${name}`).join('\n')
   if (g.trimPairs.length)
@@ -277,43 +373,6 @@ onMounted(() => {
     rawInt.value = g.interiorPairs.map(p => `${p.code}\t${p.text}`).join('\n')
 })
 
-// ── Header chip component inline ──────────────────────────────────────────────
-const HeaderChip = {
-  props: ['label','count','color'],
-  setup(props) {
-    const style = computed(() => {
-      const h = props.color.replace('#','')
-      const r = parseInt(h.slice(0,2),16), gg = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16)
-      return { background:`rgba(${r},${gg},${b},0.08)`, border:`1px solid rgba(${r},${gg},${b},0.28)`, color: props.color }
-    })
-    return { style }
-  },
-  template: `<span class="hchip" :style="style">{{ label }} <b>{{ count }}</b></span>`
-}
-
-// ── PreviewBox component inline ───────────────────────────────────────────────
-const PreviewBox = {
-  props: ['label','color','items'],
-  setup(props) {
-    const style = computed(() => {
-      const h = props.color.replace('#','')
-      const r = parseInt(h.slice(0,2),16), gg = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16)
-      return { background:`rgba(${r},${gg},${b},0.07)`, border:`1px solid rgba(${r},${gg},${b},0.28)`, color: props.color }
-    })
-    const dotStyle = computed(() => ({ background: props.color }))
-    return { style, dotStyle }
-  },
-  template: `
-    <div class="prev-section">
-      <div class="prev-title"><span class="dot" :style="dotStyle"></span>{{ label }}</div>
-      <div class="prev-box">
-        <div v-if="!items.length" class="prev-empty">— paste data above —</div>
-        <div v-else class="tag-row">
-          <span v-for="item in items" :key="item" class="ptag" :style="style">{{ item }}</span>
-        </div>
-      </div>
-    </div>`
-}
 
 // ── MERGE ─────────────────────────────────────────────────────────────────────
 
@@ -458,6 +517,12 @@ async function copyMergeFull(type) {
 .right-col { padding: 24px 28px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
 
 .section { display: flex; flex-direction: column; gap: 7px; }
+.brand-years-row { display: grid; grid-template-columns: 160px 1fr; gap: 14px; align-items: start; }
+.brand-group, .years-group { display: flex; flex-direction: column; gap: 6px; }
+.brand-group label, .years-group label { font-size: 10px; font-family: var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted2); }
+.cnt-inline { font-weight: 400; color: var(--muted); margin-left: 4px; }
+.input-row { display: flex; gap: 7px; align-items: center; }
+.input-row input { flex: 1; }
 .section-title { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted2); padding-bottom: 7px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 7px; }
 .dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
 .cnt { margin-left: auto; font-weight: 400; color: var(--muted); }
@@ -469,12 +534,16 @@ async function copyMergeFull(type) {
 .status-msg.warn { color: var(--warning); }
 
 /* Preview */
-:deep(.prev-section) { display: flex; flex-direction: column; gap: 6px; }
-:deep(.prev-title) { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted2); padding-bottom: 6px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 7px; }
-:deep(.prev-box) { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 10px 12px; font-family: var(--mono); font-size: 11px; line-height: 1.9; color: var(--muted2); max-height: 150px; overflow-y: auto; }
-:deep(.prev-empty) { color: #333; }
-:deep(.tag-row) { display: flex; flex-wrap: wrap; gap: 5px; }
-:deep(.ptag) { font-family: var(--mono); font-size: 11px; border-radius: 3px; padding: 2px 8px; }
+.prev-section { display: flex; flex-direction: column; gap: 6px; }
+.prev-title { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted2); padding-bottom: 6px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 7px; }
+.prev-box { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 10px 12px; font-family: var(--mono); font-size: 11px; line-height: 1.9; color: var(--muted2); max-height: 150px; overflow-y: auto; }
+.prev-empty { color: var(--muted); font-style: italic; }
+.tag-row { display: flex; flex-wrap: wrap; gap: 5px; }
+.ptag { font-family: var(--mono); font-size: 11px; border-radius: 3px; padding: 2px 8px; }
+.ptag-mmc  { background: rgba(52,211,153,0.08);  border: 1px solid rgba(52,211,153,0.25);  color: #34d399; }
+.ptag-trim { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); color: #f87171; }
+.ptag-ext  { background: rgba(255,159,67,0.08);  border: 1px solid rgba(255,159,67,0.25);  color: #ff9f43; }
+.ptag-int  { background: rgba(192,132,252,0.08); border: 1px solid rgba(192,132,252,0.25); color: #c084fc; }
 
 /* Tool links */
 .tool-links-section { border-top: 1px solid var(--border); padding-top: 14px; }

@@ -80,6 +80,7 @@
           </div>
           <div class="copy-row">
             <button class="btn btn-sm" @click="doCopy">⎘ Copy</button>
+            <button class="btn btn-sm" @click="doCopyFlat">⎘ No brackets</button>
             <button class="btn btn-sm" @click="downloadOutput">↓ JSON</button>
           </div>
         </div>
@@ -98,7 +99,7 @@ const {
   g, brand, years, yearInput, addYears, removeYear,
   existingJson, existingStatus, existingStatusClass, existingKeys,
   generated, currentView, visibleItems, newCount, dupCount, hasDiff,
-  loadExisting, clearExisting, copyOutput,
+  loadExisting, clearExisting, copyOutput, copyFlat,
 } = useCollector()
 
 const pairs     = ref([])
@@ -178,6 +179,7 @@ const outputHtml = computed(() => {
 })
 
 async function doCopy() { if (generated.value) await copyOutput(visibleItems.value) }
+async function doCopyFlat() { if (generated.value) await copyFlat(visibleItems.value) }
 function downloadOutput() {
   if (!generated.value) return
   const items = visibleItems.value.map(({ _isDup, ...r }) => r)

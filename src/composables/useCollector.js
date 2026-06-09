@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useGlobalsStore } from '../stores/globals.js'
 
 export function useCollector() {
@@ -7,6 +7,10 @@ export function useCollector() {
   const brand     = ref(g.brand || '')
   const years     = ref(g.years.length ? [...g.years] : [])
   const yearInput = ref('')
+
+  // Sync from globals when store changes (e.g. user loaded setup after opening this view)
+  watch(() => g.brand,  v => { if (!brand.value && v) brand.value = v }, { immediate: false })
+  watch(() => g.years,  v => { if (!years.value.length && v.length) years.value = [...v] }, { immediate: false })
 
   const existingJson        = ref('')
   const existingStatus      = ref('— no data loaded —')
@@ -64,12 +68,17 @@ export function useCollector() {
     await navigator.clipboard.writeText(JSON.stringify(out, null, 2))
   }
 
+  async function copyFlat(items) {
+    const out = items.map(({ _isDup, ...rest }) => rest)
+    await navigator.clipboard.writeText(out.map(o => JSON.stringify(o, null, 2)).join(',\n'))
+  }
+
   return {
     g, brand, years, yearInput,
     existingJson, existingStatus, existingStatusClass, existingKeys,
     generated, currentView, visibleItems,
     newCount, dupCount, hasDiff,
     parseTokens, addYears, removeYear,
-    loadExisting, clearExisting, copyOutput,
+    loadExisting, clearExisting, copyOutput, copyFlat,
   }
 }

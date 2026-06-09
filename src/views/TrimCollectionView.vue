@@ -115,6 +115,7 @@
           </div>
           <div class="copy-row">
             <button class="btn btn-sm" @click="doCopy">⎘ Copy</button>
+            <button class="btn btn-sm" @click="doCopyFlat">⎘ No brackets</button>
             <button class="btn btn-sm" @click="downloadOutput">↓ JSON</button>
           </div>
         </div>
@@ -134,7 +135,7 @@ const {
   g, brand, years, yearInput, addYears, removeYear,
   existingJson, existingStatus, existingStatusClass, existingKeys,
   generated, currentView, visibleItems, newCount, dupCount, hasDiff,
-  loadExisting, clearExisting, copyOutput,
+  loadExisting, clearExisting, copyOutput, copyFlat,
 } = useCollector()
 
 const mmcs        = ref(g.mmcs.length ? [...g.mmcs] : [])
@@ -259,7 +260,10 @@ const outputHtml = computed(() => {
 async function doCopy() {
   if (!generated.value) return
   await copyOutput(visibleItems.value)
-  // brief feedback could be added
+}
+async function doCopyFlat() {
+  if (!generated.value) return
+  await copyFlat(visibleItems.value)
 }
 
 function downloadOutput() {
