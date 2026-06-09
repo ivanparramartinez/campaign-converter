@@ -289,7 +289,7 @@ const extPairs = computed(() => {
     const idx = line.search(/\s/)
     if (idx === -1) return
     const code = line.slice(0, idx).toUpperCase()
-    const name = line.slice(idx).trim()
+    const name = toTitleCase(line.slice(idx).trim())
     if (code && name && !pairs.find(p => p.code === code)) pairs.push({ code, name })
   })
   return pairs
@@ -301,11 +301,20 @@ const intPairs = computed(() => {
     const idx = line.search(/\s/)
     if (idx === -1) return
     const code = line.slice(0, idx).toUpperCase()
-    const text = line.slice(idx).trim()
+    const text = toTitleCase(line.slice(idx).trim())
     if (code && text && !pairs.find(p => p.code === code)) pairs.push({ code, text })
   })
   return pairs
 })
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+const SMALL = new Set(['a','an','the','and','or','but','of','in','on','at','to','for','with','by'])
+function toTitleCase(str) {
+  return str.toLowerCase().replace(/[^\s-]+/g, (word, i) =>
+    (i === 0 || !SMALL.has(word)) ? word[0].toUpperCase() + word.slice(1) : word
+  )
+}
 
 // ── Actions ───────────────────────────────────────────────────────────────────
 

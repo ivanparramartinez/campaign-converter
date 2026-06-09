@@ -129,10 +129,17 @@ function addPlates() {
     .forEach(v => { if (!nameplates.value.includes(v)) nameplates.value.push(v) })
   plateInput.value = ''
 }
+const SMALL = new Set(['a','an','the','and','or','but','of','in','on','at','to','for','with','by'])
+function toTitleCase(str) {
+  return str.toLowerCase().replace(/[^\s-]+/g, (word, i) =>
+    (i === 0 || !SMALL.has(word)) ? word[0].toUpperCase() + word.slice(1) : word
+  )
+}
+
 function focusText() { textRef.value?.focus() }
 function addPair() {
   const code = pairCode.value.trim().toUpperCase()
-  const text = pairText.value.trim()
+  const text = toTitleCase(pairText.value.trim())
   if (!code || !text) return
   if (!pairs.value.find(p => p.code === code && p.text === text)) pairs.value.push({ code, text })
   pairCode.value = ''; pairText.value = ''
@@ -142,7 +149,7 @@ function bulkAdd() {
     const idx = line.search(/\s/)
     if (idx === -1) return
     const code = line.slice(0, idx).toUpperCase()
-    const text = line.slice(idx).trim()
+    const text = toTitleCase(line.slice(idx).trim())
     if (code && text && !pairs.value.find(p => p.code === code && p.text === text)) pairs.value.push({ code, text })
   })
   bulkInput.value = ''
