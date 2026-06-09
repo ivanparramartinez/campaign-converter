@@ -104,7 +104,8 @@
       <!-- RIGHT: OUTPUT -->
       <div class="main">
         <div class="output-actions" v-if="generatedJSON">
-          <button class="btn btn-sm" @click="copyOutput">⎘ Copy JSON</button>
+          <button class="btn btn-sm" @click="copyOutput">⎘ Copy</button>
+          <button class="btn btn-sm" @click="copyFlat">⎘ No brackets</button>
           <button class="btn btn-sm" @click="downloadJSON">↓ Download</button>
           <button v-if="!g.dealer" class="btn btn-sm btn-cyan" @click="refreshDealer">↻ Randomize dealer</button>
           <span v-else class="dealer-fixed">📍 {{ g.dealer.name }}</span>
@@ -312,6 +313,11 @@ function refreshDealer() {
 async function copyOutput() {
   if (!generatedJSON.value) return
   await navigator.clipboard.writeText(JSON.stringify(generatedJSON.value, null, 2))
+}
+
+async function copyFlat() {
+  if (!generatedJSON.value) return
+  await navigator.clipboard.writeText(generatedJSON.value.map(o => JSON.stringify(o, null, 2)).join(',\n'))
 }
 
 function downloadJSON() {

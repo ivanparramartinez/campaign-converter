@@ -11,6 +11,7 @@ const routes = [
   { path: '/models',        name: 'models',    component: () => import('../views/ModelsView.vue') },
   { path: '/exteriors',     name: 'exteriors', component: () => import('../views/ExteriorsView.vue') },
   { path: '/viewer',        name: 'viewer',    component: () => import('../views/ViewerView.vue') },
+  { path: '/dealer-replace', name: 'dealer-replace', component: () => import('../views/DealerReplaceView.vue') },
 ]
 
 export default createRouter({
