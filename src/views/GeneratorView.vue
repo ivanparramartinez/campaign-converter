@@ -106,7 +106,8 @@
         <div class="output-actions" v-if="generatedJSON">
           <button class="btn btn-sm" @click="copyOutput">⎘ Copy JSON</button>
           <button class="btn btn-sm" @click="downloadJSON">↓ Download</button>
-          <button class="btn btn-sm btn-cyan" @click="refreshDealer">↻ Randomize dealer</button>
+          <button v-if="!g.dealer" class="btn btn-sm btn-cyan" @click="refreshDealer">↻ Randomize dealer</button>
+          <span v-else class="dealer-fixed">📍 {{ g.dealer.name }}</span>
         </div>
 
         <pre class="output-box"><code v-html="outputHtml || '// Configure fields and press Generate'" /></pre>
@@ -263,7 +264,7 @@ function generate() {
       for (const loyalty of variants) {
         const combo     = rand(gCombos)
         const intColor  = rand(interiorColors.value)
-        const dealer    = randDealer(f.marketingMake)
+        const dealer    = g.dealer || randDealer(f.marketingMake)
         const firstName = randFirstName()
         const msgId = String(f.messageIdStart + msgIdx)
         const vName = `${msgId}_${f.campaignPrefix} | ${f.marketingMake} | ${ec} | ${f.modelYear} | ${modelName}`
@@ -342,6 +343,7 @@ onMounted(() => {
 .logo { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
 .logo span { color: var(--accent); }
 .record-count { font-family: var(--mono); font-size: 11px; color: var(--muted2); }
+.dealer-fixed { font-family: var(--mono); font-size: 11px; color: var(--warning); }
 .layout { display: grid; grid-template-columns: 360px 1fr; min-height: calc(100vh - 109px); }
 .sidebar { border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
 .main { padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; }

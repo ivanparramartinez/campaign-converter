@@ -100,6 +100,26 @@
           <textarea v-model="rawInt" rows="5" placeholder="H2G	Jet Black Vinyl&#10;H1T	Jet Black Cloth" />
         </div>
 
+        <!-- DEALER -->
+        <div class="section">
+          <div class="section-title">
+            <span class="dot" style="background:var(--warning)"></span>
+            Dealer
+            <span class="cnt" v-if="dealerParsed">✓ set</span>
+            <span class="cnt" v-else>—</span>
+            <button v-if="dealerParsed" class="btn btn-sm btn-danger" style="margin-left:auto;padding:1px 8px;font-size:10px" @click="rawDealer=''; g.clearDealer()">✕</button>
+          </div>
+          <div class="hint">5 lines: Name · Address · City, State Zip · Phone · URL</div>
+          <textarea v-model="rawDealer" rows="6"
+            placeholder="Serra GMC&#10;1600 Montgomery Hwy&#10;Hoover, AL 35216&#10;2058237000&#10;www.serragmc.com" />
+          <div v-if="dealerParsed" class="dealer-preview">
+            <div class="dp-row"><span class="dp-label">Name</span><span>{{ dealerParsed.name }}</span></div>
+            <div class="dp-row"><span class="dp-label">Address</span><span>{{ dealerParsed.address }}, {{ dealerParsed.city }}, {{ dealerParsed.state }} {{ dealerParsed.zip }}</span></div>
+            <div class="dp-row"><span class="dp-label">Phone</span><span>{{ dealerParsed.phone }}</span></div>
+            <div class="dp-row"><span class="dp-label">URL</span><span style="color:var(--accent2)">{{ dealerParsed.url }}</span></div>
+          </div>
+        </div>
+
         <!-- ACTIONS -->
         <div class="actions">
           <button class="btn btn-accent" @click="loadAll">⚡ Load into all tools</button>
@@ -238,10 +258,34 @@ function addYear() {
 }
 
 // Raw textarea state
-const rawMmc  = ref('')
-const rawTrim = ref('')
-const rawExt  = ref('')
-const rawInt  = ref('')
+const rawMmc   = ref('')
+const rawTrim  = ref('')
+const rawExt   = ref('')
+const rawInt   = ref('')
+const rawDealer = ref('')
+
+// Dealer parser
+const dealerParsed = computed(() => {
+  const lines = rawDealer.value.split('\n').map(l => l.trim()).filter(Boolean)
+  if (lines.length < 5) return null
+  const [nameLine, addressLine, cityStateLine, phoneLine, urlLine] = lines
+  // Parse "City, State Zip"
+  const m = cityStateLine.match(/^(.+),\s*([A-Za-z]{2})\s+(\d{5}(?:-\d{4})?)$/)
+  if (!m) return null
+  // Ensure https://
+  let url = urlLine.trim()
+  if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url
+  return {
+    name:    nameLine,
+    address: addressLine,
+    city:    m[1].trim(),
+    state:   m[2].toUpperCase(),
+    zip:     m[3],
+    phone:   phoneLine.replace(/\D/g, ''),
+    url,
+    bac:     lines[5] || '',
+  }
+})
 
 const statusMsg   = ref('')
 const statusClass = ref('')
@@ -335,6 +379,7 @@ function loadAll() {
   g.setTrimPairs(trimPairsLocal.value)
   g.setExteriorPairs(extPairs.value)
   g.setInteriorPairs(intPairs.value)
+  if (dealerParsed.value) g.setDealer(dealerParsed.value)
 
   const parts = []
   if (brand.value)                  parts.push(brand.value)
@@ -343,6 +388,7 @@ function loadAll() {
   if (trimPairsLocal.value.length)  parts.push(`${trimPairsLocal.value.length} trims`)
   if (extPairs.value.length)        parts.push(`${extPairs.value.length} ext`)
   if (intPairs.value.length)        parts.push(`${intPairs.value.length} int`)
+  if (dealerParsed.value)           parts.push(`dealer: ${dealerParsed.value.name}`)
 
   if (!parts.length) { showStatus('Paste at least one section of data first.', 'warn'); return }
   showStatus(`✓ ${parts.join(' · ')} loaded into all tools`, 'ok')
@@ -350,7 +396,7 @@ function loadAll() {
 
 function clearAll() {
   brand.value = ''; years.value = []; yearInput.value = ''
-  rawMmc.value = rawTrim.value = rawExt.value = rawInt.value = ''
+  rawMmc.value = rawTrim.value = rawExt.value = rawInt.value = rawDealer.value = ''
   g.clearAll()
   showStatus('All data cleared.', 'warn')
 }
@@ -380,6 +426,10 @@ onMounted(() => {
     rawExt.value = g.exteriorPairs.map(p => `${p.code} ${p.name}`).join('\n')
   if (g.interiorPairs.length)
     rawInt.value = g.interiorPairs.map(p => `${p.code}\t${p.text}`).join('\n')
+  if (g.dealer) {
+    const d = g.dealer
+    rawDealer.value = [d.name, d.address, `${d.city}, ${d.state} ${d.zip}`, d.phone, d.url, d.bac].filter(Boolean).join('\n')
+  }
 })
 
 
@@ -549,6 +599,9 @@ async function copyMergeFull(type) {
 .prev-empty { color: var(--muted); font-style: italic; }
 .tag-row { display: flex; flex-wrap: wrap; gap: 5px; }
 .ptag { font-family: var(--mono); font-size: 11px; border-radius: 3px; padding: 2px 8px; }
+.dealer-preview { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 9px 12px; display: flex; flex-direction: column; gap: 4px; }
+.dp-row { display: flex; gap: 10px; font-family: var(--mono); font-size: 11px; }
+.dp-label { color: var(--muted); min-width: 52px; text-transform: uppercase; font-size: 10px; letter-spacing: 0.08em; padding-top: 1px; }
 .ptag-mmc  { background: rgba(52,211,153,0.08);  border: 1px solid rgba(52,211,153,0.25);  color: #34d399; }
 .ptag-trim { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); color: #f87171; }
 .ptag-ext  { background: rgba(255,159,67,0.08);  border: 1px solid rgba(255,159,67,0.25);  color: #ff9f43; }

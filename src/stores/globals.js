@@ -11,6 +11,7 @@ export const useGlobalsStore = defineStore('globals', () => {
   const trimPairs      = ref([])
   const interiorPairs  = ref([])
   const exteriorPairs  = ref([])
+  const dealer         = ref(null) // { name, address, city, state, zip, phone, url, bac }
 
   // Computed
   const hasAny = computed(() =>
@@ -47,6 +48,9 @@ export const useGlobalsStore = defineStore('globals', () => {
   function setExteriorPairs(pairs) { exteriorPairs.value = pairs }
   function clearExteriorPairs() { exteriorPairs.value = [] }
 
+  function setDealer(d) { dealer.value = d }
+  function clearDealer() { dealer.value = null }
+
   function clearAll() {
     brand.value = ''
     years.value = []
@@ -56,17 +60,19 @@ export const useGlobalsStore = defineStore('globals', () => {
     trimPairs.value = []
     interiorPairs.value = []
     exteriorPairs.value = []
+    dealer.value = null
   }
 
   return {
     brand, years, nameplates, mmcs, mmcModelMap,
-    trimPairs, interiorPairs, exteriorPairs, hasAny,
+    trimPairs, interiorPairs, exteriorPairs, dealer, hasAny,
     setBrand, addYear, removeYear,
     addNameplate, removeNameplate,
     setMMCs, clearMMCs,
     setTrimPairs, clearTrimPairs,
     setInteriorPairs, clearInteriorPairs,
     setExteriorPairs, clearExteriorPairs,
+    setDealer, clearDealer,
     clearAll,
   }
 }, {
