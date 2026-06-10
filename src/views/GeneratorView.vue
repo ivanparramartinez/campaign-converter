@@ -268,9 +268,9 @@ function generate() {
         const dealer    = g.dealer || randDealer(f.marketingMake)
         const firstName = randFirstName()
         const msgId = String(f.messageIdStart + msgIdx)
-        const vName = `${msgId}_${f.campaignPrefix} | ${f.marketingMake} | ${ec} | ${f.modelYear} | ${modelName}`
+        const vName = `${f.campaignPrefix} | ${f.marketingMake} | ${ec} | ${f.modelYear} | ${modelName}`
         records.push({
-          subjectLine: `${vName}_${combo.trim}_${combo.ext}_${intColor}`,
+          subjectLine: `${msgId}_${vName}_${combo.trim}_${combo.ext}_${intColor}`,
           message: { id: msgId, delivery: { mapping: { name:'targetData' }, label: randLabel() } },
           targetData: {
             VersionId: msgId, VERSION_NAME: vName, Touch: f.touch,
