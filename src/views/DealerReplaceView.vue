@@ -115,6 +115,19 @@
               </div>
             </div>
 
+            <!-- Checking progress banner -->
+            <div v-if="checking" class="checking-banner">
+              <span class="pulse-dot"></span>
+              Verifying URLs… {{ checkedCount }} / {{ checkableCount }}
+            </div>
+
+            <!-- Filter toggle (shown after done) -->
+            <div v-if="auditDone && (auditCounts.error + auditCounts.timeout) > 0" class="filter-bar">
+              <button class="filter-btn" :class="{active: filterFailed}" @click="filterFailed = !filterFailed">
+                {{ filterFailed ? '✕ Show all' : `⚠ Show issues only (${auditCounts.error + auditCounts.timeout})` }}
+              </button>
+            </div>
+
             <div class="audit-table">
               <div class="audit-row audit-head">
                 <div class="ac brand-col">Brand</div>
@@ -122,7 +135,7 @@
                 <div class="ac url-col">URL</div>
                 <div class="ac status-col">Status</div>
               </div>
-              <div v-for="(row, i) in auditRows" :key="i" class="audit-row" :class="'status-' + row.status">
+              <div v-for="(row, i) in displayedRows" :key="i" class="audit-row" :class="'status-' + row.status">
                 <div class="ac brand-col">
                   <span class="brand-dot" :style="{background: getBrandColor(row.brand)}"></span>
                   {{ row.brand || '—' }}
@@ -322,9 +335,18 @@ async function copyFlat() {
 }
 
 // ─── AUDIT ───────────────────────────────────────────────────────────────────
-const auditRows = ref([])
-const checking  = ref(false)
-const auditDone = ref(false)
+const auditRows     = ref([])
+const checking      = ref(false)
+const auditDone     = ref(false)
+const filterFailed  = ref(false)
+const checkedCount  = ref(0)
+const checkableCount = ref(0)
+
+const displayedRows = computed(() =>
+  filterFailed.value
+    ? auditRows.value.filter(r => r.status === 'error' || r.status === 'timeout')
+    : auditRows.value
+)
 
 const auditCounts = computed(() => {
   const rows = auditRows.value
@@ -379,17 +401,19 @@ async function checkUrl(url) {
 async function checkAllUrls() {
   checking.value = true
   auditDone.value = false
+  filterFailed.value = false
 
   const checkable = auditRows.value.filter(r => r.url)
-  // Mark all as checking
   checkable.forEach(r => { r.status = 'checking' })
+  checkedCount.value = 0
+  checkableCount.value = checkable.length
 
-  // Check concurrently (5 at a time)
   const CONCURRENCY = 5
   for (let i = 0; i < checkable.length; i += CONCURRENCY) {
     const batch = checkable.slice(i, i + CONCURRENCY)
     await Promise.all(batch.map(async row => {
       row.status = await checkUrl(row.url)
+      checkedCount.value++
     }))
   }
 
@@ -490,6 +514,15 @@ async function checkAllUrls() {
 .audit-row.status-ok      { background: rgba(52,211,153,0.03); }
 .audit-row.status-error   { background: rgba(248,113,113,0.05); }
 .audit-row.status-timeout { background: rgba(255,187,0,0.04); }
+
+.checking-banner { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 11px; color: var(--muted2); background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 8px 14px; }
+.pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+.filter-bar { display: flex; }
+.filter-btn { font-family: var(--mono); font-size: 11px; font-weight: 600; background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.3); color: #f87171; border-radius: 4px; padding: 5px 14px; cursor: pointer; transition: all 0.13s; }
+.filter-btn:hover { background: rgba(248,113,113,0.15); }
+.filter-btn.active { background: var(--surface2); border-color: var(--border2); color: var(--muted2); font-weight: 400; }
 
 .audit-summary { display: flex; gap: 10px; flex-wrap: wrap; padding-top: 4px; }
 .sum-chip { font-family: var(--mono); font-size: 11px; font-weight: 600; border-radius: 3px; padding: 3px 12px; }
