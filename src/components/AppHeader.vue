@@ -13,6 +13,7 @@
       <router-link to="/checker"         class="nav-link">Checker</router-link>
       <router-link to="/generator"       class="nav-link">Generator</router-link>
       <router-link to="/dealer-replace"  class="nav-link">Dealers</router-link>
+      <router-link to="/validator"       class="nav-link">Validator</router-link>
       <router-link to="/setup"           class="nav-link">Setup</router-link>
       <router-link to="/viewer"          class="nav-link">Viewer</router-link>
     </nav>

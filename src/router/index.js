@@ -12,6 +12,7 @@ const routes = [
   { path: '/exteriors',     name: 'exteriors', component: () => import('../views/ExteriorsView.vue') },
   { path: '/viewer',        name: 'viewer',    component: () => import('../views/ViewerView.vue') },
   { path: '/dealer-replace', name: 'dealer-replace', component: () => import('../views/DealerReplaceView.vue') },
+  { path: '/validator',     name: 'validator',     component: () => import('../views/ScenarioValidatorView.vue') },
 ]
 
 export default createRouter({
