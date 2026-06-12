@@ -30,6 +30,11 @@
           <button class="btn btn-sm" @click="ejsSource=''; parsedVars={}; validated=[]">↺</button>
         </div>
 
+        <!-- Parse log -->
+        <div v-if="parseLog.length" class="parse-log">
+          <div v-for="(line, i) in parseLog" :key="i" class="log-line" :class="line.includes('✗') ? 'log-err' : line.includes('No var') ? 'log-warn' : 'log-ok'">{{ line }}</div>
+        </div>
+
         <!-- Detected variables -->
         <div v-if="Object.keys(parsedVars).length" class="vars-section">
           <div class="vars-title">Variables detectadas</div>
@@ -162,46 +167,98 @@ const FieldCell = defineComponent({
 // ─── EJS PARSING ─────────────────────────────────────────────────────────────
 const ejsSource  = ref('')
 const parsedVars = ref({})
+const parseLog   = ref([])
 
 function detectType(arr) {
   if (!Array.isArray(arr) || !arr.length) return 'unknown'
-  const first = arr[0]
-  if (!first || typeof first !== 'object') return 'unknown'
-  if ('INTERIOR_CODE' in first) return 'interior'
-  if ('DERIVED_FIELDS1' in first) return 'exterior'
-  if ('TRIM' in first && 'MMC' in first) return 'trim'
-  if ('MMC' in first) return 'models'
+  // Check a few items (not just first) in case first is odd
+  const samples = arr.slice(0, 5)
+  for (const first of samples) {
+    if (!first || typeof first !== 'object') continue
+    if ('INTERIOR_CODE' in first) return 'interior'
+    if ('DERIVED_FIELDS1' in first) return 'exterior'
+    if ('TRIM' in first && 'MMC' in first) return 'trim'
+    if ('MMC' in first) return 'models'
+  }
   return 'unknown'
 }
 
+// String-aware bracket finder — skips [ ] inside strings
+function findClosingBracket(str, start) {
+  let depth = 0
+  let i = start
+  let inStr = false
+  let strChar = ''
+  while (i < str.length) {
+    const c = str[i]
+    if (inStr) {
+      if (c === '\\') { i += 2; continue }   // skip escaped char
+      if (c === strChar) inStr = false
+    } else {
+      if (c === '"' || c === "'" || c === '`') { inStr = true; strChar = c }
+      else if (c === '[') depth++
+      else if (c === ']') { depth--; if (depth === 0) return i }
+    }
+    i++
+  }
+  return -1
+}
+
 function extractArrays(source) {
-  // Strip EJS template tags
-  const cleaned = source.replace(/<%[-=_]?[\s\S]*?%>/g, '')
+  const log = []
+
+  // 1. Remove EJS delimiters but KEEP the JS content inside them
+  //    <%# comment blocks %> → remove entirely
+  //    <%= expr %> and <%- expr %> → remove (output expressions, not data)
+  //    <% code %> → keep the code, just strip the delimiters
+  let cleaned = source
+    .replace(/<%#[\s\S]*?%>/g, '')          // remove EJS comments entirely
+    .replace(/<%[=\-][\s\S]*?%>/g, '')      // remove output expressions
+    .replace(/<%[-_]?/g, '')                // remove remaining opening tags
+    .replace(/[-_]?%>/g, '')               // remove closing tags
+  // 2. Strip line comments
+  cleaned = cleaned.replace(/\/\/[^\n]*/g, '')
+  // 3. Strip block comments
+  cleaned = cleaned.replace(/\/\*[\s\S]*?\*\//g, '')
 
   const result = {}
-  // Match: var NAME = [
-  const re = /var\s+(\w+)\s*=\s*\[/g
+  // Match var / const / let  NAME = [
+  const re = /(?:var|const|let)\s+(\w+)\s*=\s*\[/g
   let m
   while ((m = re.exec(cleaned)) !== null) {
-    const name = m[1]
-    const start = m.index + m[0].length - 1 // position of opening '['
-    // Walk to find matching ']'
-    let depth = 0, i = start
-    while (i < cleaned.length) {
-      const c = cleaned[i]
-      if (c === '[') depth++
-      else if (c === ']') { depth--; if (depth === 0) break }
-      i++
+    const name  = m[1]
+    const open  = m.index + m[0].length - 1   // position of '['
+    const close = findClosingBracket(cleaned, open)
+
+    if (close === -1) {
+      result[name] = { data: null, type: 'error', error: 'Unmatched brackets' }
+      log.push(`${name}: ✗ unmatched brackets`)
+      continue
     }
-    const arrStr = cleaned.slice(start, i + 1)
+
+    const arrStr = cleaned.slice(open, close + 1)
     try {
       // eslint-disable-next-line no-new-func
       const data = new Function('return ' + arrStr)()
-      result[name] = { data, type: detectType(data) }
+      if (!Array.isArray(data)) {
+        result[name] = { data: null, type: 'error', error: 'Not an array' }
+        log.push(`${name}: ✗ not an array`)
+      } else {
+        const type = detectType(data)
+        result[name] = { data, type }
+        log.push(`${name}: ✓ ${data.length} items → ${type}`)
+      }
     } catch (e) {
       result[name] = { data: null, type: 'error', error: e.message }
+      log.push(`${name}: ✗ ${e.message.slice(0, 80)}`)
     }
   }
+
+  if (!Object.keys(result).length) {
+    log.push('No var/const/let declarations with array values found.')
+  }
+
+  parseLog.value = log
   return result
 }
 
@@ -335,6 +392,12 @@ function brandColor(b) { return BRAND_COLORS[b] || 'var(--muted2)' }
 .sidebar-label { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted2); padding-bottom: 6px; border-bottom: 1px solid var(--border); }
 
 .parse-actions { display: flex; gap: 8px; }
+
+.parse-log { display: flex; flex-direction: column; gap: 2px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 8px 10px; }
+.log-line  { font-family: var(--mono); font-size: 10px; line-height: 1.5; }
+.log-ok    { color: #34d399; }
+.log-err   { color: #f87171; }
+.log-warn  { color: var(--warning); }
 
 .vars-section { display: flex; flex-direction: column; gap: 5px; padding-top: 4px; }
 .vars-title { font-family: var(--mono); font-size: 9px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted2); margin-bottom: 2px; }
