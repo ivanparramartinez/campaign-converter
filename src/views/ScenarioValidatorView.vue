@@ -283,9 +283,7 @@ const refData = computed(() => {
     if (v.type === 'interior') interior.push(...v.data)
   }
 
-  const mmcs         = new Set(models.map(r => r.MMC).filter(Boolean))
-  const extSet       = new Set(exterior.map(r => r.DERIVED_FIELDS1).filter(Boolean))
-  const intSet       = new Set(interior.map(r => r.INTERIOR_CODE).filter(Boolean))
+  const mmcs = new Set(models.map(r => r.MMC).filter(Boolean))
 
   // trimByMmc: Map<MMC, Set<TRIM>>
   const trimByMmc = new Map()
@@ -294,6 +292,20 @@ const refData = computed(() => {
     if (!trimByMmc.has(r.MMC)) trimByMmc.set(r.MMC, new Set())
     trimByMmc.get(r.MMC).add(r.TRIM)
   })
+
+  // Exterior: keyed by BRAND|MODEL_YR|VEH_NAME_PLATE|COLOR  (same logic as ExteriorsView comboKey)
+  const extSet = new Set(
+    exterior
+      .filter(r => r.BRAND && r.MODEL_YR && r.VEH_NAME_PLATE && r.DERIVED_FIELDS1)
+      .map(r => `${r.BRAND}|${r.MODEL_YR}|${r.VEH_NAME_PLATE}|${r.DERIVED_FIELDS1}`.toUpperCase())
+  )
+
+  // Interior: keyed by BRAND|MODEL_YR|VEH_NAME_PLATE|CODE  (same logic as InteriorView comboKey)
+  const intSet = new Set(
+    interior
+      .filter(r => r.BRAND && r.MODEL_YR && r.VEH_NAME_PLATE && r.INTERIOR_CODE)
+      .map(r => `${r.BRAND}|${r.MODEL_YR}|${r.VEH_NAME_PLATE}|${r.INTERIOR_CODE}`.toUpperCase())
+  )
 
   return { models, trim, exterior, interior, mmcs, extSet, intSet, trimByMmc }
 })
@@ -326,25 +338,31 @@ const inputRecords = computed(() => {
 const validated = ref([])
 
 function validate(record) {
-  const td = record.targetData || record
-  const mmc  = (td.merchandisingModelCode || '').trim()
-  const trim = (td.trim                   || '').trim()
-  const ext  = (td.exteriorColor          || '').trim()
-  const int_ = (td.interior               || '').trim()
-  const d    = refData.value
+  const td    = record.targetData || record
+  const mmc   = (td.merchandisingModelCode || '').trim()
+  const trim  = (td.trim                   || '').trim()
+  const ext   = (td.exteriorColor          || '').trim()
+  const int_  = (td.interior               || '').trim()
+  const brand = (td.marketingMake          || '').trim()
+  const year  = String(td.modelYear        || '').trim()
+  const model = (td.marketingModel         || '').trim()
+  const d     = refData.value
 
-  const mmcValid  = d.models.length   ? (mmc  ? d.mmcs.has(mmc)                            : false) : null
-  const trimValid = d.trim.length     ? (trim ? (d.trimByMmc.get(mmc)?.has(trim) ?? false)  : false) : null
-  const extValid  = d.exterior.length ? (ext  ? d.extSet.has(ext)                           : false) : null
-  const intValid  = d.interior.length ? (int_ ? d.intSet.has(int_)                          : false) : null
+  const mmcValid  = d.models.length   ? (mmc  ? d.mmcs.has(mmc)                           : false) : null
+  const trimValid = d.trim.length     ? (trim ? (d.trimByMmc.get(mmc)?.has(trim) ?? false) : false) : null
+
+  // Exterior/Interior validated per BRAND|MODEL_YR|VEH_NAME_PLATE|CODE
+  const extKey = `${brand}|${year}|${model}|${ext}`.toUpperCase()
+  const intKey = `${brand}|${year}|${model}|${int_}`.toUpperCase()
+
+  const extValid  = d.exterior.length ? (ext  ? d.extSet.has(extKey) : false) : null
+  const intValid  = d.interior.length ? (int_ ? d.intSet.has(intKey) : false) : null
 
   const hasIssue = [mmcValid, trimValid, extValid, intValid].some(v => v === false)
 
   return {
     versionId: td.VersionId || '',
-    brand: td.marketingMake  || '',
-    year:  td.modelYear      || '',
-    model: td.marketingModel || '',
+    brand, year, model,
     mmc, trim, ext, int: int_,
     mmcValid, trimValid, extValid, intValid, hasIssue,
   }
